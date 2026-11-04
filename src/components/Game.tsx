@@ -47,7 +47,7 @@ import {
 } from '@/game/data';
 import { available, deliver, ready, useGame, type Panel } from '@/game/store';
 import { count, levelFromXp, maxCreatureHp, validShelter } from '@/game/rules';
-import { keys, motion } from '@/game/input';
+import { keys, motion, navigation } from '@/game/input';
 import { ambience } from '@/game/audio';
 const World = dynamic(() => import('./World'), {
   ssr: false,
@@ -433,7 +433,7 @@ function Hud() {
             <kbd>S</kbd>
             <kbd>D</kbd>
           </span>
-          <span>Move</span>
+          <span>Move · or click the ground</span>
           <span className="hint-divider" />
           Hold <kbd>RMB</kbd>
           <span>Look around</span>
@@ -915,7 +915,10 @@ function SettingsPanel() {
       <div className="control-guide">
         <h3>A few helpful keys</h3>
         <p>WASD move · Shift sprint · Space jump · Hold right mouse to look</p>
-        <p>E interact · F gather · I backpack · J journal · C creatures · M map</p>
+        <p>
+          Click to move, collect or interact · E interact · F gather · I backpack · J journal · C
+          creatures · M map
+        </p>
         <p>B building · V companion commands · Q elemental attack · 1–6 hotbar · Esc pause</p>
         <p>Building: left click place · right click remove · hold middle mouse to look</p>
       </div>
@@ -1148,6 +1151,8 @@ export default function Game() {
         e.preventDefault();
       if (e.repeat) return;
       keys.add(e.code);
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyF', 'KeyB', 'Escape'].includes(e.code))
+        navigation.destination = null;
       if (e.code === 'Escape') {
         if (state.dialogue) useGame.setState({ dialogue: null });
         else state.open(state.panel ? null : 'pause');
@@ -1189,13 +1194,6 @@ export default function Game() {
       const s = useGame.getState();
       if (s.panel || s.dialogue || !s.started) return;
       if ((e.button === 2 && !s.build) || (e.button === 1 && s.build)) motion.rotating = true;
-      if (e.button === 0 && !s.build) {
-        if (s.target === 'guardian') s.attack();
-        else {
-          const item = s.save.hotbar[s.selected];
-          if (item === 'pickaxe') s.interact();
-        }
-      }
     };
     const up = () => (motion.rotating = false);
     const move = (e: MouseEvent) => {

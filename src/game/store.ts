@@ -96,7 +96,7 @@ export const defaultSettings: Settings = {
   sensitivity: 1,
   quality: 'medium',
   reducedMotion: false,
-  distance: 9,
+  distance: 13,
 };
 export function validateSave(value: unknown): Save {
   if (!value || typeof value !== 'object') throw Error('Invalid save file.');
@@ -338,6 +338,7 @@ export const useGame = create<GameStore>((set, get) => ({
           ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
         };
       } catch {}
+      if (settings.distance === 9) settings.distance = 13;
       set({ hasSave: !!saved, loading: false, settings });
     } catch (e) {
       set({ loading: false, saveStatus: 'Save unavailable' });

@@ -1,5 +1,5 @@
 export const keys = new Set<string>();
-export const motion = { yaw: 0, pitch: 0.43, rotating: false };
+export const motion = { yaw: 0, pitch: 0.68, rotating: false };
 export const playerRuntime = {
   position: [0, 1, 5] as [number, number, number],
   moving: false,
@@ -7,4 +7,9 @@ export const playerRuntime = {
   grounded: true,
   action: 'idle',
   actionUntil: 0,
+};
+
+// Transient intent, deliberately excluded from saved adventures.
+export const navigation = {
+  destination: null as { x: number; z: number; interaction?: string } | null,
 };

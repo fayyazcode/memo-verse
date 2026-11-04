@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { CREATURES, LANDMARKS, NPCS, OBJECTS, PLOT, type Species, type Vec3 } from '@/game/data';
 import { useGame } from '@/game/store';
 import { validPlacement, type Block } from '@/game/rules';
-import { keys, motion, playerRuntime } from '@/game/input';
+import { keys, motion, playerRuntime, navigation } from '@/game/input';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
 const UP = new THREE.Vector3(0, 1, 0);
@@ -397,7 +397,7 @@ function ObjectMesh({ id }: { id: string }) {
   const depleted = used > time * 10;
   if (obj.kind === 'landmark') return null;
   return (
-    <group position={obj.pos}>
+    <group position={obj.pos} userData={{ interactionId: obj.id }}>
       {obj.item === 'wood' ? (
         <Tree position={[0, 0, 0]} scale={depleted ? 0.75 : 1} />
       ) : obj.item === 'berry' || obj.item === 'fruit' ? (
@@ -537,6 +537,8 @@ function Player() {
   const accumulator = useRef(0),
     jumpLatch = useRef(false),
     safe = useRef<Vec3>([0, 1, 5]);
+  const previousPosition = useRef(new THREE.Vector3());
+  const stuckTime = useRef(0);
   const camPos = useRef(new THREE.Vector3()),
     look = useRef(new THREE.Vector3());
   useEffect(() => {
@@ -569,11 +571,40 @@ function Player() {
       dx = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
       dz = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
     }
-    const isMoving = !!(dx || dz),
+    if (paused || dx || dz) navigation.destination = null;
+    const destination = navigation.destination;
+    const dir = new THREE.Vector3(dx, 0, dz).normalize().applyAxisAngle(UP, motion.yaw);
+    if (destination && !paused) {
+      const distance = Math.hypot(destination.x - p.x, destination.z - p.z);
+      const arrival = destination.interaction
+        ? destination.interaction === 'guardian'
+          ? 4
+          : 2.1
+        : 0.3;
+      if (distance <= arrival) {
+        navigation.destination = null;
+        if (destination.interaction) {
+          useGame.setState({ target: destination.interaction });
+          useGame.getState().interact();
+        }
+      } else {
+        dir.set(destination.x - p.x, 0, destination.z - p.z).normalize();
+        stuckTime.current =
+          previousPosition.current.distanceTo(new THREE.Vector3(p.x, p.y, p.z)) < 0.005
+            ? stuckTime.current + dt
+            : 0;
+        if (stuckTime.current > 1.5) {
+          navigation.destination = null;
+          dir.set(0, 0, 0);
+          state.notify('The way is blocked. Click a clear spot or use WASD to go around.');
+        }
+      }
+    } else stuckTime.current = 0;
+    previousPosition.current.set(p.x, p.y, p.z);
+    const isMoving = dir.lengthSq() > 0,
       isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight');
     if (isMoving !== moving) setMoving(isMoving);
     if (isRunning !== running) setRunning(isRunning);
-    const dir = new THREE.Vector3(dx, 0, dz).normalize().applyAxisAngle(UP, motion.yaw);
     const speed = isRunning ? 7 : 4,
       velocity = b.linvel();
     let vy = paused ? 0 : velocity.y;
@@ -706,8 +737,8 @@ function Buildings() {
   const placeable =
     item && ['block', 'lamp', 'stool', 'statue'].includes(item) ? (item as Block['item']) : 'block';
   const point = (e: ThreeEvent<PointerEvent>, existing?: Block) => {
-    e.stopPropagation();
     if (!build) return;
+    e.stopPropagation();
     const normal = e.face?.normal.clone() ?? new THREE.Vector3(0, 1, 0);
     const v = e.point.clone().addScaledVector(normal, 0.02);
     const b: Block = {
@@ -796,6 +827,50 @@ function Lighting() {
     </>
   );
 }
+function clickWorld(e: ThreeEvent<PointerEvent>) {
+  const state = useGame.getState();
+  if (e.button !== 0 || !state.started || state.panel || state.dialogue || state.build) return;
+  e.stopPropagation();
+  let object: THREE.Object3D | null = e.object;
+  let id: string | undefined;
+  while (object) {
+    if (object.userData.interactionId) {
+      id = object.userData.interactionId;
+      break;
+    }
+    object = object.parent;
+  }
+  const target = id
+    ? (NPCS.find((n) => n.id === id)?.pos ??
+      OBJECTS.find((o) => o.id === id)?.pos ??
+      (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
+    : undefined;
+  const ground = e.ray.intersectPlane(new THREE.Plane(UP, 0), new THREE.Vector3());
+  const x = target?.[0] ?? ground?.x,
+    z = target?.[2] ?? ground?.z;
+  if (x === undefined || z === undefined || Math.abs(x) > 127 || Math.abs(z) > 127) return;
+  navigation.destination = {
+    x,
+    z,
+    interaction:
+      target && id && OBJECTS.find((o) => o.id === id)?.kind !== 'landmark' ? id : undefined,
+  };
+}
+function MoveMarker() {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (!ref.current) return;
+    const target = navigation.destination;
+    ref.current.visible = !!target;
+    if (target) ref.current.position.set(target.x, 0.06, target.z);
+  });
+  return (
+    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+      <ringGeometry args={[0.3, 0.43, 32]} />
+      <meshBasicMaterial color="#fff4ba" transparent opacity={0.9} />
+    </mesh>
+  );
+}
 function Scene() {
   return (
     <>
@@ -804,37 +879,40 @@ function Scene() {
       <Lighting />
       <Suspense fallback={null}>
         <Physics gravity={[0, -16, 0]} timeStep={1 / 60}>
-          <Terrain />
-          <Scenery />
-          <Buildings />
-          {OBJECTS.map((o) => (
-            <ObjectMesh key={o.id} id={o.id} />
-          ))}
-          {NPCS.map((n) => (
-            <group key={n.id} position={n.pos}>
-              <RigidBody type="fixed" colliders={false}>
-                <CapsuleCollider args={[0.5, 0.4]} position={[0, 0.8, 0]} />
-                <Character
-                  color={n.color}
-                  hoodie={n.id === 'moss' ? '#c5b68d' : n.id === 'luna' ? '#e1d9ca' : '#cec4ad'}
-                  npc
-                />
-              </RigidBody>
-              <Label text={n.name} position={[0, 2.5, 0]} size={0.4} />
-              <mesh position={[0, 3, 0]} rotation={[0, 0, Math.PI / 4]}>
-                <boxGeometry args={[0.17, 0.17, 0.04]} />
-                <meshBasicMaterial color="#f3df9a" />
-              </mesh>
-            </group>
-          ))}
-          {(Object.entries(CREATURES) as [Species, (typeof CREATURES)[Species]][]).map(
-            ([id, c]) => (
-              <group key={id} position={c.pos}>
-                <CreatureModel species={id} />
-                <Label text={c.name} position={[0, 1.7, 0]} size={0.35} />
+          <group onPointerDown={clickWorld}>
+            <Terrain />
+            <Scenery />
+            <Buildings />
+            {OBJECTS.map((o) => (
+              <ObjectMesh key={o.id} id={o.id} />
+            ))}
+            {NPCS.map((n) => (
+              <group key={n.id} position={n.pos} userData={{ interactionId: n.id }}>
+                <RigidBody type="fixed" colliders={false}>
+                  <CapsuleCollider args={[0.5, 0.4]} position={[0, 0.8, 0]} />
+                  <Character
+                    color={n.color}
+                    hoodie={n.id === 'moss' ? '#c5b68d' : n.id === 'luna' ? '#e1d9ca' : '#cec4ad'}
+                    npc
+                  />
+                </RigidBody>
+                <Label text={n.name} position={[0, 2.5, 0]} size={0.4} />
+                <mesh position={[0, 3, 0]} rotation={[0, 0, Math.PI / 4]}>
+                  <boxGeometry args={[0.17, 0.17, 0.04]} />
+                  <meshBasicMaterial color="#f3df9a" />
+                </mesh>
               </group>
-            )
-          )}
+            ))}
+            {(Object.entries(CREATURES) as [Species, (typeof CREATURES)[Species]][]).map(
+              ([id, c]) => (
+                <group key={id} position={c.pos} userData={{ interactionId: 'creature:' + id }}>
+                  <CreatureModel species={id} />
+                  <Label text={c.name} position={[0, 1.7, 0]} size={0.35} />
+                </group>
+              )
+            )}
+          </group>
+          <MoveMarker />
           <Companion />
           <Player />
         </Physics>

@@ -23,3 +23,9 @@ Production build and TypeScript pass. All 31 rule/integration/persistence tests 
 ## Next exact work
 
 Run the checks in TESTING.md. After the guest build passes, prioritize a full browser campaign traversal and collision/navigation fixes before adding presentation content. Build the authenticated persistence path with explicit server command validation once service configuration is available. Preserve the runnable guest workflow throughout.
+
+## Camera and mouse-control update
+
+Raised the default follow angle and increased default distance from 9 to 13. Existing saves and custom zoom settings remain supported; the previous default zoom upgrades automatically. Ground clicks move the player; object clicks approach and interact once in range. WASD overrides navigation. Building mode retains placement/removal clicks. Direct movement respects physics and stops on a blocked route; automatic pathfinding around obstacles is not implemented.
+
+Validation for the camera/mouse update: production build, TypeScript, 31 logic tests, and all five Chromium browser tests passed.

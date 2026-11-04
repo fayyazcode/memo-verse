@@ -23,6 +23,8 @@ Start the development server before running browser tests. See [TESTING.md](TEST
 
 ## Play
 
+Click the ground to move. Click a villager, creature, resource, or station to approach and interact automatically. WASD immediately overrides a click destination. Blocked routes stop with guidance rather than walking through obstacles. The default camera is raised and pulled back for a smaller character and a wider view.
+
 WASD move; Shift sprint; Space jump; hold right mouse to rotate camera. E interacts, F gathers, I opens inventory, J journal, C creatures, M map, V companion commands, B building, Q elemental attack, and Esc pause. Left click attacks the nearby Guardian. In build mode left click places, right click removes, and holding middle mouse rotates the camera. Select hotbar slots with 1–6 or the wheel.
 
 Start with Grandpa Moss, northwest of your spawn. Accept his mission, meet Foxy and Bruno, and return for your reward. The journal records all prerequisites and objectives. Craft at Bruno’s bench. Quest deliveries and reward claims are explicit dialogue actions.
