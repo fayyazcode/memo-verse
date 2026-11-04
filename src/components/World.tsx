@@ -1,0 +1,861 @@
+'use client';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import {
+  Physics,
+  RigidBody,
+  CuboidCollider,
+  CapsuleCollider,
+  type RapierRigidBody,
+  useRapier,
+} from '@react-three/rapier';
+import * as THREE from 'three';
+import { CREATURES, LANDMARKS, NPCS, OBJECTS, PLOT, type Species, type Vec3 } from '@/game/data';
+import { useGame } from '@/game/store';
+import { validPlacement, type Block } from '@/game/rules';
+import { keys, motion, playerRuntime } from '@/game/input';
+import { sound } from '@/game/audio';
+import { Character, CreatureModel } from './Character';
+const UP = new THREE.Vector3(0, 1, 0);
+function Box({
+  position,
+  size,
+  color,
+  rotation = [0, 0, 0],
+  ...rest
+}: {
+  position: Vec3;
+  size: Vec3;
+  color: string;
+  rotation?: Vec3;
+  onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
+  onPointerMove?: (e: ThreeEvent<PointerEvent>) => void;
+}) {
+  return (
+    <mesh position={position} rotation={rotation} castShadow receiveShadow {...rest}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={color} roughness={0.88} />
+    </mesh>
+  );
+}
+function Label({
+  text,
+  position,
+  color = '#fff7df',
+  size = 0.43,
+}: {
+  text: string;
+  position: Vec3;
+  color?: string;
+  size?: number;
+}) {
+  const texture = useMemo(() => {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 96;
+    const ctx = c.getContext('2d')!;
+    ctx.font = '600 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(32,49,36,.8)';
+    ctx.beginPath();
+    ctx.roundRect(8, 12, 496, 72, 24);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, 256, 61);
+    return new THREE.CanvasTexture(c);
+  }, [text, color]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  return (
+    <sprite position={position} scale={[size * 5.3, size, 1]}>
+      <spriteMaterial map={texture} transparent depthTest={false} />
+    </sprite>
+  );
+}
+function Tree({
+  position,
+  scale = 1,
+  autumn = false,
+}: {
+  position: Vec3;
+  scale?: number;
+  autumn?: boolean;
+}) {
+  return (
+    <group position={position} scale={scale}>
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider args={[0.32, 1.5, 0.32]} position={[0, 1.5, 0]} />
+        <Box position={[0, 1.6, 0]} size={[0.55, 3.2, 0.55]} color="#816951" />
+      </RigidBody>
+      {[
+        [-0.8, 3.1, 0.1, 1.5],
+        [0.65, 3.5, 0.15, 1.5],
+        [0, 4.25, 0, 1.65],
+        [0, 3, -0.7, 1.4],
+      ].map(([x, y, z, r], i) => (
+        <mesh key={i} position={[x, y, z]} castShadow>
+          <icosahedronGeometry args={[r, 1]} />
+          <meshStandardMaterial
+            color={
+              autumn
+                ? ['#b4bb6c', '#ccba75', '#a3af66', '#b9c97b'][i]
+                : ['#7caa63', '#91b976', '#a3c681', '#6c9c5b'][i]
+            }
+            flatShading
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+function House({
+  position,
+  color = '#e4d5b1',
+  roof = '#8a9c76',
+  rotation = 0,
+  shop = false,
+}: {
+  position: Vec3;
+  color?: string;
+  roof?: string;
+  rotation?: number;
+  shop?: boolean;
+}) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider args={[2.6, 1.8, 2.1]} position={[0, 1.8, 0]} />
+        <Box position={[0, 1.7, 0]} size={[5.2, 3.4, 4.2]} color={color} />
+        <Box position={[0, 0.18, 0]} size={[5.6, 0.36, 4.6]} color="#a5a18a" />
+      </RigidBody>
+      <mesh position={[0, 4, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+        <coneGeometry args={[4.4, 2, 4]} />
+        <meshStandardMaterial color={roof} flatShading />
+      </mesh>
+      <Box position={[0, 4.8, 0.3]} size={[0.6, 1.4, 0.7]} color="#b9aa8e" />
+      <Box position={[0, 1.05, 2.13]} size={[1.15, 2.1, 0.12]} color="#7e7157" />
+      <Box position={[0.31, 1, 2.23]} size={[0.08, 0.08, 0.08]} color="#e6cc85" />
+      {[-1.7, 1.7].map((x) => (
+        <group key={x}>
+          <Box position={[x, 1.9, 2.15]} size={[0.95, 1, 0.12]} color="#6e8274" />
+          <Box position={[x, 1.9, 2.23]} size={[0.7, 0.78, 0.05]} color="#d8e3c5" />
+          <Box position={[x, 1.9, 2.27]} size={[0.06, 0.85, 0.06]} color="#8d8469" />
+          <Box position={[x, 1.9, 2.27]} size={[0.8, 0.06, 0.06]} color="#8d8469" />
+          <Box position={[x, 1.25, 2.35]} size={[1.2, 0.2, 0.5]} color="#8c7659" />
+          {[-0.3, 0, 0.3].map((dx) => (
+            <mesh key={dx} position={[x + dx, 1.45, 2.4]}>
+              <sphereGeometry args={[0.17, 8, 6]} />
+              <meshStandardMaterial color={dx === 0 ? '#e2c783' : '#b6bf79'} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {shop && (
+        <>
+          <Box position={[0, 2.6, 3]} size={[5.5, 0.15, 2]} color="#b0bb87" />
+          {[-2.5, 2.5].map((x) => (
+            <Box key={x} position={[x, 1.3, 3.7]} size={[0.14, 2.6, 0.14]} color="#867455" />
+          ))}
+          <Box position={[0, 0.65, 3.5]} size={[4.5, 1.3, 0.8]} color="#ae8b61" />
+        </>
+      )}
+    </group>
+  );
+}
+function Terrain() {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const tiles = useMemo(() => {
+    const a = [];
+    for (let x = -128; x < 128; x += 4)
+      for (let z = -128; z < 128; z += 4)
+        a.push({
+          x,
+          z,
+          color:
+            ((x * 31 + z * 17) & 7) < 2
+              ? '#91b57b'
+              : ((x * 7 + z * 11) & 7) < 3
+                ? '#96b981'
+                : '#9dbe87',
+        });
+    return a;
+  }, []);
+  useEffect(() => {
+    if (!mesh.current) return;
+    const m = new THREE.Object3D();
+    tiles.forEach((t, i) => {
+      m.position.set(t.x + 2, -0.6, t.z + 2);
+      m.scale.set(4, 1.2, 4);
+      m.updateMatrix();
+      mesh.current!.setMatrixAt(i, m.matrix);
+      mesh.current!.setColorAt(i, new THREE.Color(t.color));
+    });
+    mesh.current.instanceMatrix.needsUpdate = true;
+    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true;
+  }, [tiles]);
+  return (
+    <>
+      <instancedMesh ref={mesh} args={[undefined, undefined, tiles.length]} receiveShadow>
+        <boxGeometry />
+        <meshStandardMaterial roughness={1} />
+      </instancedMesh>
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider args={[128, 0.6, 128]} position={[0, -0.6, 0]} />
+        {[
+          [128, 0],
+          [-128, 0],
+          [0, 128],
+          [0, -128],
+        ].map(([x, z], i) => (
+          <CuboidCollider key={i} args={x ? [0.5, 12, 128] : [128, 12, 0.5]} position={[x, 8, z]} />
+        ))}
+      </RigidBody>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]} receiveShadow>
+        <circleGeometry args={[9, 12]} />
+        <meshStandardMaterial color="#c5bea0" />
+      </mesh>
+      <Box position={[39, 0.025, -25]} size={[9, 0.05, 36]} color="#8fbfc1" />
+      <Box position={[37, 0.04, -25]} size={[1, 0.03, 34]} color="#aed4ce" />
+      {Array.from({ length: 28 }, (_, i) => (
+        <Box
+          key={i}
+          position={[i * 3 - 14, 0.025, 1 + Math.sin(i * 0.12) * 1.5]}
+          size={[3.05, 0.045, 3.6]}
+          color={i % 3 === 0 ? '#c3b995' : '#cbbf9d'}
+        />
+      ))}
+      <Box position={[3, 0.025, 16]} size={[3, 0.05, 18]} color="#c6bc9e" />
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider args={[4.5, 0.4, 1.7]} position={[39, 0.3, -15]} />
+        <Box position={[39, 0.7, -15]} size={[9, 0.2, 3.4]} color="#b39670" />
+        {[-16.7, -13.3].map((z) => (
+          <Box key={z} position={[39, 1.3, z]} size={[9, 0.12, 0.12]} color="#8a785d" />
+        ))}
+      </RigidBody>
+    </>
+  );
+}
+function InstancedForest({ trees }: { trees: { x: number; z: number; s: number }[] }) {
+  const trunks = useRef<THREE.InstancedMesh>(null),
+    leaves = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    if (!trunks.current || !leaves.current) return;
+    const m = new THREE.Object3D();
+    trees.forEach((t, i) => {
+      m.position.set(t.x, 1.6 * t.s, t.z);
+      m.scale.set(0.55 * t.s, 3.2 * t.s, 0.55 * t.s);
+      m.updateMatrix();
+      trunks.current!.setMatrixAt(i, m.matrix);
+      [
+        [-0.8, 3.1, 0.1, 1.5],
+        [0.65, 3.5, 0.15, 1.5],
+        [0, 4.25, 0, 1.65],
+        [0, 3, -0.7, 1.4],
+      ].forEach(([x, y, z, r], j) => {
+        m.position.set(t.x + x * t.s, y * t.s, t.z + z * t.s);
+        m.scale.setScalar(r * t.s);
+        m.updateMatrix();
+        leaves.current!.setMatrixAt(i * 4 + j, m.matrix);
+        leaves.current!.setColorAt(
+          i * 4 + j,
+          new THREE.Color(
+            (i % 7 === 0
+              ? ['#b4bb6c', '#ccba75', '#a3af66', '#b9c97b']
+              : ['#7caa63', '#91b976', '#a3c681', '#6c9c5b'])[j]
+          )
+        );
+      });
+    });
+    trunks.current.instanceMatrix.needsUpdate = true;
+    leaves.current.instanceMatrix.needsUpdate = true;
+    leaves.current.instanceColor!.needsUpdate = true;
+  }, [trees]);
+  return (
+    <>
+      <instancedMesh ref={trunks} args={[undefined, undefined, trees.length]} castShadow>
+        <boxGeometry />
+        <meshStandardMaterial color="#816951" />
+      </instancedMesh>
+      <instancedMesh ref={leaves} args={[undefined, undefined, trees.length * 4]} castShadow>
+        <icosahedronGeometry args={[1, 1]} />
+        <meshStandardMaterial flatShading />
+      </instancedMesh>
+      <RigidBody type="fixed" colliders={false}>
+        {trees.map((t, i) => (
+          <CuboidCollider
+            key={i}
+            position={[t.x, 1.5 * t.s, t.z]}
+            args={[0.32 * t.s, 1.5 * t.s, 0.32 * t.s]}
+          />
+        ))}
+      </RigidBody>
+    </>
+  );
+}
+function Scenery() {
+  const trees = useMemo(
+    () =>
+      Array.from({ length: 155 }, (_, i) => {
+        const x = ((i * 37) % 211) - 100,
+          z = ((i * 61) % 211) - 100;
+        return { x, z, s: 0.8 + (i % 5) * 0.13 };
+      }).filter((t) => !(t.x > -26 && t.x < 99 && t.z > -30 && t.z < 49)),
+    []
+  );
+  return (
+    <>
+      <InstancedForest trees={trees} />
+      {[
+        [-23, 0, -7],
+        [-17, 0, -15],
+        [-4, 0, -19],
+        [16, 0, -19],
+        [-24, 0, 16],
+        [15, 0, 18],
+        [22, 0, -13],
+        [27, 0, 35],
+        [58, 0, 43],
+        [72, 0, 26],
+        [82, 0, -12],
+      ].map((p, i) => (
+        <Tree key={i} position={p as Vec3} scale={1.1 + (i % 3) * 0.15} />
+      ))}
+      <Tree position={[45, 0, 42]} scale={2} />
+      <House position={[-16, 0, -1]} roof="#8c9d77" shop />
+      <House position={[11, 0, 4]} roof="#b89372" color="#e2d3b5" />
+      <House position={[10, 0, -16]} roof="#899ea0" />
+      <House position={[-11, 0, -12]} roof="#9aab7d" rotation={0.15} />
+      <House position={[-25, 0, 8]} roof="#bb9b7a" rotation={0.2} />
+      <group position={[0, 0, -3]}>
+        <Box position={[0, 0.25, 0]} size={[3, 0.5, 3]} color="#a7ac96" />
+        <Box position={[0, 0.6, 0]} size={[2.3, 0.3, 2.3]} color="#c2c9b2" />
+        <Box position={[0, 0.8, 0]} size={[1.8, 0.1, 1.8]} color="#8bbac0" />
+        <mesh position={[0, 1.1, 0]} castShadow>
+          <cylinderGeometry args={[0.22, 0.35, 0.8, 8]} />
+          <meshStandardMaterial color="#b4baa4" />
+        </mesh>
+        <mesh position={[0, 1.6, 0]}>
+          <sphereGeometry args={[0.45, 12, 8]} />
+          <meshStandardMaterial color="#c7d1b2" />
+        </mesh>
+      </group>
+      {[-6, 6].map((x) => (
+        <group key={x} position={[x, 0, 4]}>
+          <Box position={[0, 0.5, 0]} size={[2, 0.18, 0.7]} color="#aa8861" />
+          {[-0.8, 0.8].map((dx) => (
+            <Box key={dx} position={[dx, 0.25, 0]} size={[0.15, 0.5, 0.5]} color="#7b7057" />
+          ))}
+        </group>
+      ))}
+      <group position={[18, 0, 1]}>
+        <Box position={[0, 1.3, 0]} size={[0.2, 2.6, 0.2]} color="#89765b" />
+        <Box position={[0, 2.3, 0]} size={[3, 0.65, 0.2]} color="#a48b64" />
+        <Label text="GREENWOOD →" position={[0, 2.3, 0.2]} size={0.34} />
+      </group>
+      {Array.from({ length: 13 }, (_, i) => (
+        <group key={i} position={[-6 + i * 1.33, 0, 35]}>
+          <Box position={[0, 0.6, 0]} size={[0.13, 1.2, 0.13]} color="#c2b28b" />
+          <Box position={[0.6, 0.8, 0]} size={[1.3, 0.12, 0.12]} color="#cabb96" />
+        </group>
+      ))}
+      <Label text="YOUR HOMESTEAD" position={[2, 1.3, 35]} size={0.4} />
+      {Array.from({ length: 95 }, (_, i) => {
+        const x = ((i * 17) % 103) - 24,
+          z = ((i * 23) % 61) - 22;
+        if (Math.abs(z) < 4 || (x < 15 && z < 18)) return null;
+        return (
+          <group key={i} position={[x, 0.1, z]}>
+            <mesh rotation={[0, i, 0]}>
+              <coneGeometry args={[0.18, 0.5, 3]} />
+              <meshStandardMaterial color="#718e58" />
+            </mesh>
+            {i % 3 === 0 && (
+              <mesh position={[0.12, 0.3, 0]}>
+                <icosahedronGeometry args={[0.12, 0]} />
+                <meshStandardMaterial color={i % 2 ? '#ede3ad' : '#d9b3b0'} />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
+    </>
+  );
+}
+function ObjectMesh({ id }: { id: string }) {
+  const obj = OBJECTS.find((o) => o.id === id)!;
+  const used = useGame((s) => s.save.nodes[id] ?? 0),
+    time = useGame((s) => Math.floor(s.save.playTime / 10)),
+    done = useGame((s) => s.save.flags.includes('ability:' + id)),
+    guardianHp = useGame((s) => (id === 'guardian' ? s.save.enemyHp : 0)),
+    target = useGame((s) => s.target === id),
+    telegraph = useGame(
+      (s) =>
+        id === 'guardian' &&
+        s.save.enemyCooldown < 0.9 &&
+        s.save.enemyHp > 0 &&
+        s.save.flags.includes('repaired')
+    );
+  const depleted = used > time * 10;
+  if (obj.kind === 'landmark') return null;
+  return (
+    <group position={obj.pos}>
+      {obj.item === 'wood' ? (
+        <Tree position={[0, 0, 0]} scale={depleted ? 0.75 : 1} />
+      ) : obj.item === 'berry' || obj.item === 'fruit' ? (
+        <>
+          <mesh position={[0, 0.55, 0]} castShadow>
+            <icosahedronGeometry args={[0.65, 1]} />
+            <meshStandardMaterial color={depleted ? '#819b69' : '#7c9d60'} />
+          </mesh>
+          {!depleted &&
+            [-0.3, 0, 0.3].map((x, i) => (
+              <mesh key={i} position={[x, 0.7, 0.5]}>
+                <sphereGeometry args={[0.12, 8, 6]} />
+                <meshStandardMaterial color={obj.item === 'fruit' ? '#e1c879' : '#b66a7c'} />
+              </mesh>
+            ))}
+        </>
+      ) : obj.item === 'fiber' ? (
+        <group scale={depleted ? 0.5 : 1}>
+          {[-1, 0, 1].map((x) => (
+            <mesh key={x} position={[x * 0.15, 0.3, 0]} rotation={[0, 0, x * 0.3]}>
+              <coneGeometry args={[0.15, 0.65, 4]} />
+              <meshStandardMaterial color="#698d58" />
+            </mesh>
+          ))}
+        </group>
+      ) : obj.item === 'crystal' || obj.item === 'fragment' ? (
+        <>
+          {[-0.25, 0.1, 0.3].map((x, i) => (
+            <mesh key={i} position={[x, 0.35 + i * 0.1, 0]} rotation={[0, 0, x]} castShadow>
+              <coneGeometry args={[0.22, 0.8 + i * 0.15, 5]} />
+              <meshStandardMaterial
+                color={depleted ? '#8a9e94' : obj.item === 'fragment' ? '#d6c869' : '#a5cbd2'}
+                emissive={depleted ? '#000' : '#75a4ac'}
+                emissiveIntensity={0.25}
+              />
+            </mesh>
+          ))}
+        </>
+      ) : obj.item === 'stone' || obj.item === 'ore' ? (
+        <RigidBody type="fixed" colliders="hull">
+          <mesh position={[0, 0.4, 0]} scale={[1, 0.65, 0.8]} castShadow>
+            <dodecahedronGeometry args={[0.8, 0]} />
+            <meshStandardMaterial color={obj.item === 'ore' ? '#a6967f' : '#9ca69a'} />
+          </mesh>
+        </RigidBody>
+      ) : obj.id === 'guardian' ? (
+        <>
+          <group scale={[1.8, 1.8, 1.8]}>
+            <CreatureModel species="mosshell" moving={guardianHp < 100 && guardianHp > 0} />
+          </group>
+          {guardianHp > 0 && (
+            <Label text={`BRAMBLE GUARDIAN · ${guardianHp} HP`} position={[0, 2.7, 0]} size={0.5} />
+          )}
+        </>
+      ) : obj.id === 'craft' ? (
+        <>
+          <Box position={[0, 0.8, 0]} size={[2, 0.25, 1.2]} color="#ae916c" />
+          {[-0.8, 0.8].map((x) => (
+            <Box key={x} position={[x, 0.4, 0]} size={[0.15, 0.8, 0.8]} color="#8b795c" />
+          ))}
+          <Box position={[0.4, 1.1, 0]} size={[0.5, 0.4, 0.5]} color="#8e9b94" />
+        </>
+      ) : obj.id === 'heal' ? (
+        <>
+          <Box position={[0, 0.55, 0]} size={[1.5, 1.1, 1]} color="#d8d3b7" />
+          <Box position={[0, 1.15, 0]} size={[1.7, 0.2, 1.2]} color="#b1cba9" />
+          <mesh position={[0, 1.5, 0]}>
+            <octahedronGeometry args={[0.3]} />
+            <meshStandardMaterial color="#a0d2bb" emissive="#7da68e" emissiveIntensity={0.4} />
+          </mesh>
+        </>
+      ) : obj.id === 'board' ? (
+        <>
+          <Box position={[0, 1.7, 0]} size={[2, 1.5, 0.2]} color="#9c8562" />
+          <Box position={[0, 0.7, 0]} size={[0.17, 1.4, 0.17]} color="#7c7258" />
+          <Box position={[0, 1.7, 0.13]} size={[1.6, 1.1, 0.03]} color="#ded3ad" />
+        </>
+      ) : obj.id === 'chest' ? (
+        <>
+          <Box position={[0, 0.4, 0]} size={[1.1, 0.8, 0.7]} color="#a58759" />
+          <Box position={[0, 0.4, 0.37]} size={[0.15, 0.3, 0.04]} color="#dfcd89" />
+        </>
+      ) : obj.id === 'plant' ? (
+        <>
+          <mesh position={[0, 0.6, 0]}>
+            <coneGeometry args={[0.4, 1.2, 5]} />
+            <meshStandardMaterial color={done ? '#a7c785' : '#8e9c73'} />
+          </mesh>
+          <mesh position={[0, 1.3, 0]}>
+            <icosahedronGeometry args={[0.3, 1]} />
+            <meshStandardMaterial color={done ? '#e8d9ac' : '#b4b999'} />
+          </mesh>
+        </>
+      ) : obj.id === 'toughNode' || obj.id === 'passage' ? (
+        <Box
+          position={[0, done ? 0.15 : 1, 0]}
+          size={[obj.id === 'passage' ? 4 : 1.5, done ? 0.3 : 2, 1.5]}
+          color={done ? '#b4b59e' : '#8b9784'}
+        />
+      ) : obj.id === 'repair' ? (
+        <Box position={[0, 0.1, 0]} size={[4, 0.2, 4]} color="#b9a884" />
+      ) : (
+        <>
+          <Box position={[0, 0.5, 0]} size={[0.8, 1, 0.8]} color="#9aab9d" />
+          <mesh position={[0, 1.25, 0]}>
+            <octahedronGeometry args={[0.3]} />
+            <meshStandardMaterial
+              color={done ? '#e9d983' : '#8bafa9'}
+              emissive={done ? '#c7b66b' : '#000'}
+              emissiveIntensity={0.5}
+            />
+          </mesh>
+        </>
+      )}
+      {telegraph && (
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.3, 2.3, 32]} />
+          <meshBasicMaterial color="#cf8865" transparent opacity={0.55} />
+        </mesh>
+      )}
+      {target && (
+        <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.8, 1, 32]} />
+          <meshBasicMaterial color="#fff2b5" transparent opacity={0.8} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+function Player() {
+  const body = useRef<RapierRigidBody>(null),
+    visual = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+  const { world, rapier } = useRapier();
+  const [moving, setMoving] = useState(false),
+    [running, setRunning] = useState(false);
+  const accumulator = useRef(0),
+    jumpLatch = useRef(false),
+    safe = useRef<Vec3>([0, 1, 5]);
+  const camPos = useRef(new THREE.Vector3()),
+    look = useRef(new THREE.Vector3());
+  useEffect(() => {
+    useGame.setState({ worldReady: true });
+    const s = useGame.getState().save.position;
+    body.current?.setTranslation({ x: s[0], y: s[1], z: s[2] }, true);
+    camPos.current.set(s[0], s[1] + 5, s[2] + 9);
+    return useGame.subscribe((state, previous) => {
+      const p = state.save.position,
+        old = previous.save.position;
+      if ((state.started && !previous.started) || Math.hypot(p[0] - old[0], p[2] - old[2]) > 15) {
+        body.current?.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
+        body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      }
+    });
+  }, []);
+  useFrame((_, rawDt) => {
+    const b = body.current;
+    if (!b) return;
+    const dt = Math.min(rawDt, 0.05),
+      state = useGame.getState(),
+      p = b.translation();
+    const paused = !state.started || !!state.panel || !!state.dialogue || document.hidden;
+    const groundRay = new rapier.Ray({ x: p.x, y: p.y - 0.4, z: p.z }, { x: 0, y: -1, z: 0 });
+    const hit = world.castRay(groundRay, 0.65, true, undefined, undefined, undefined, b);
+    const grounded = !!hit && hit.timeOfImpact < 0.57;
+    let dx = 0,
+      dz = 0;
+    if (!paused) {
+      dx = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
+      dz = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
+    }
+    const isMoving = !!(dx || dz),
+      isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    if (isMoving !== moving) setMoving(isMoving);
+    if (isRunning !== running) setRunning(isRunning);
+    const dir = new THREE.Vector3(dx, 0, dz).normalize().applyAxisAngle(UP, motion.yaw);
+    const speed = isRunning ? 7 : 4,
+      velocity = b.linvel();
+    let vy = paused ? 0 : velocity.y;
+    if (!paused && keys.has('Space') && grounded && !jumpLatch.current) {
+      vy = 6.8;
+      jumpLatch.current = true;
+      sound('jump', state.settings.effects * 0.4);
+    }
+    if (!keys.has('Space')) jumpLatch.current = false;
+    b.setLinvel({ x: dir.x * speed, y: vy, z: dir.z * speed }, true);
+    b.setGravityScale(paused ? 0 : 1, true);
+    if (visual.current && isMoving) {
+      const target = Math.atan2(dir.x, dir.z);
+      visual.current.rotation.y +=
+        Math.atan2(
+          Math.sin(target - visual.current.rotation.y),
+          Math.cos(target - visual.current.rotation.y)
+        ) * Math.min(1, dt * 14);
+    }
+    if (grounded && p.y > 0.5) safe.current = [p.x, p.y, p.z];
+    if (p.y < -6 || Math.abs(p.x) > 129 || Math.abs(p.z) > 129) {
+      b.setTranslation({ x: safe.current[0], y: safe.current[1] + 0.2, z: safe.current[2] }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }
+    playerRuntime.position = [p.x, p.y, p.z];
+    playerRuntime.moving = isMoving;
+    playerRuntime.running = isRunning;
+    playerRuntime.grounded = grounded;
+    const focus = new THREE.Vector3(p.x, p.y + 0.8, p.z),
+      distance = state.settings.distance;
+    const offset = new THREE.Vector3(
+      Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
+      Math.sin(motion.pitch) * distance,
+      Math.cos(motion.yaw) * Math.cos(motion.pitch) * distance
+    );
+    const ray = new rapier.Ray(focus, offset.clone().normalize());
+    const obstruction = world.castRay(ray, distance, true, undefined, undefined, undefined, b);
+    if (obstruction) offset.setLength(Math.max(1.2, obstruction.timeOfImpact - 0.4));
+    const desired = focus.clone().add(offset);
+    camPos.current.lerp(desired, state.settings.reducedMotion ? 1 : 1 - Math.exp(-8 * dt));
+    look.current.lerp(focus, 1 - Math.exp(-12 * dt));
+    camera.position.copy(camPos.current);
+    camera.lookAt(look.current);
+    accumulator.current += dt;
+    if (accumulator.current > 0.1) {
+      accumulator.current = 0;
+      state.setPosition([p.x, p.y, p.z]);
+      const candidates = [
+        ...NPCS.map((n) => ({ id: n.id, pos: n.pos, radius: 2.5 })),
+        ...OBJECTS.filter((o) => o.kind !== 'landmark'),
+        ...state.save.blocks
+          .filter((b) => b.item === 'lamp')
+          .map((b) => ({
+            id: `lamp:${b.x}:${b.y}:${b.z}`,
+            pos: [b.x + 0.5, b.y + 0.5, b.z + 0.5] as Vec3,
+          })),
+        ...Object.entries(CREATURES).map(([id, c]) => ({ id: 'creature:' + id, pos: c.pos })),
+      ];
+      let nearest: string | null = null,
+        best = 3;
+      for (const c of candidates) {
+        const d = Math.hypot(c.pos[0] - p.x, c.pos[2] - p.z);
+        if (d < best && d < ('radius' in c ? Number(c.radius) : 3)) {
+          best = d;
+          nearest = c.id;
+        }
+      }
+      useGame.setState({ target: nearest });
+      for (const landmark of LANDMARKS)
+        if (
+          Math.hypot(landmark.pos[0] - p.x, landmark.pos[2] - p.z) <
+          (landmark.id === 'plot' ? 7 : 5)
+        )
+          state.discover(landmark.id);
+    }
+  });
+  return (
+    <RigidBody
+      ref={body}
+      colliders={false}
+      position={[0, 1, 5]}
+      enabledRotations={[false, false, false]}
+      friction={0}
+      linearDamping={0}
+      ccd
+    >
+      <CapsuleCollider args={[0.48, 0.3]} position={[0, 0.02, 0]} />
+      <group ref={visual} position={[0, -0.78, 0]}>
+        <Character moving={moving} running={running} />
+      </group>
+    </RigidBody>
+  );
+}
+function Companion() {
+  const id = useGame((s) => s.save.active),
+    command = useGame((s) => s.command),
+    healthy = useGame((s) => (s.save.active ? !!s.save.creatures[s.save.active]?.hp : false));
+  const ref = useRef<THREE.Group>(null);
+  const lastId = useRef<Species | null>(null);
+  useFrame((_, dt) => {
+    if (!ref.current || !id) return;
+    const p = playerRuntime.position;
+    if (lastId.current !== id) {
+      ref.current.position.set(p[0] - 1, 0, p[2] + 1);
+      lastId.current = id;
+    }
+    if (command === 'stay') return;
+    const distance = Math.hypot(ref.current.position.x - p[0], ref.current.position.z - p[2]);
+    if (distance > 15) ref.current.position.set(p[0] - 1, 0, p[2] + 1);
+    if (distance > 1.8) {
+      const desired = new THREE.Vector3(p[0] - 1, 0, p[2] + 1);
+      ref.current.position.lerp(desired, Math.min(1, dt * 3));
+      ref.current.lookAt(p[0], 0, p[2]);
+    }
+  });
+  return id && healthy ? (
+    <group ref={ref}>
+      <CreatureModel species={id} moving={command === 'follow'} />
+    </group>
+  ) : null;
+}
+function Buildings() {
+  const blocks = useGame((s) => s.save.blocks),
+    build = useGame((s) => s.build),
+    selected = useGame((s) => s.selected),
+    hotbar = useGame((s) => s.save.hotbar),
+    flags = useGame((s) => s.save.flags);
+  const [preview, setPreview] = useState<Block | null>(null);
+  const item = hotbar[selected];
+  const placeable =
+    item && ['block', 'lamp', 'stool', 'statue'].includes(item) ? (item as Block['item']) : 'block';
+  const point = (e: ThreeEvent<PointerEvent>, existing?: Block) => {
+    e.stopPropagation();
+    if (!build) return;
+    const normal = e.face?.normal.clone() ?? new THREE.Vector3(0, 1, 0);
+    const v = e.point.clone().addScaledVector(normal, 0.02);
+    const b: Block = {
+      x: Math.floor(v.x),
+      y: Math.max(0, Math.floor(v.y)),
+      z: Math.floor(v.z),
+      item: placeable,
+    };
+    if (e.type === 'pointermove') {
+      setPreview(b);
+      return;
+    }
+    if (e.button === 2 && existing) useGame.getState().remove(existing);
+    else if (e.button === 0) useGame.getState().place(b);
+  };
+  return (
+    <>
+      <mesh
+        position={[2, 0.012, 27]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onPointerMove={(e) => point(e)}
+        onPointerDown={(e) => point(e)}
+        receiveShadow
+      >
+        <planeGeometry args={[16, 16]} />
+        <meshStandardMaterial color="#b1b78d" />
+      </mesh>
+      {build && <gridHelper args={[16, 16, '#eae0b6', '#d0cca6']} position={[2, 0.025, 27]} />}
+      {blocks.map((b) => (
+        <RigidBody key={`${b.x}:${b.y}:${b.z}`} type="fixed" colliders="cuboid">
+          <Box
+            position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]}
+            size={b.item === 'block' ? [1, 1, 1] : [0.8, 0.8, 0.8]}
+            color={b.item === 'lamp' ? '#e5d29a' : b.item === 'statue' ? '#a8b9a1' : '#b2936e'}
+            onPointerMove={(e) => point(e, b)}
+            onPointerDown={(e) => point(e, b)}
+          />
+          {b.item === 'lamp' && !flags.includes(`off:lamp:${b.x}:${b.y}:${b.z}`) && (
+            <pointLight
+              position={[b.x + 0.5, b.y + 1, b.z + 0.5]}
+              intensity={2}
+              distance={5}
+              color="#ffe4a5"
+            />
+          )}
+        </RigidBody>
+      ))}
+      {build && preview && (
+        <mesh position={[preview.x + 0.5, preview.y + 0.5, preview.z + 0.5]}>
+          <boxGeometry args={[1.01, 1.01, 1.01]} />
+          <meshBasicMaterial
+            color={validPlacement(preview, blocks, playerRuntime.position) ? '#d5edb2' : '#e99f8c'}
+            transparent
+            opacity={0.45}
+            wireframe
+          />
+        </mesh>
+      )}
+    </>
+  );
+}
+function Lighting() {
+  const sun = useRef<THREE.DirectionalLight>(null);
+  useFrame(() => {
+    if (sun.current) {
+      const time = useGame.getState().save.playTime;
+      sun.current.intensity = 1.6 + Math.sin(time / 180) * 0.65;
+    }
+  });
+  return (
+    <>
+      <ambientLight intensity={0.8} />
+      <hemisphereLight args={['#e7f0d7', '#a5ae83', 1.3]} />
+      <directionalLight
+        ref={sun}
+        position={[-18, 35, 22]}
+        intensity={1.8}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-40}
+        shadow-camera-right={50}
+        shadow-camera-top={45}
+        shadow-camera-bottom={-30}
+        shadow-bias={-0.0005}
+      />
+    </>
+  );
+}
+function Scene() {
+  return (
+    <>
+      <color attach="background" args={['#cadbc3']} />
+      <fog attach="fog" args={['#cadbc3', 65, 135]} />
+      <Lighting />
+      <Suspense fallback={null}>
+        <Physics gravity={[0, -16, 0]} timeStep={1 / 60}>
+          <Terrain />
+          <Scenery />
+          <Buildings />
+          {OBJECTS.map((o) => (
+            <ObjectMesh key={o.id} id={o.id} />
+          ))}
+          {NPCS.map((n) => (
+            <group key={n.id} position={n.pos}>
+              <RigidBody type="fixed" colliders={false}>
+                <CapsuleCollider args={[0.5, 0.4]} position={[0, 0.8, 0]} />
+                <Character
+                  color={n.color}
+                  hoodie={n.id === 'moss' ? '#c5b68d' : n.id === 'luna' ? '#e1d9ca' : '#cec4ad'}
+                  npc
+                />
+              </RigidBody>
+              <Label text={n.name} position={[0, 2.5, 0]} size={0.4} />
+              <mesh position={[0, 3, 0]} rotation={[0, 0, Math.PI / 4]}>
+                <boxGeometry args={[0.17, 0.17, 0.04]} />
+                <meshBasicMaterial color="#f3df9a" />
+              </mesh>
+            </group>
+          ))}
+          {(Object.entries(CREATURES) as [Species, (typeof CREATURES)[Species]][]).map(
+            ([id, c]) => (
+              <group key={id} position={c.pos}>
+                <CreatureModel species={id} />
+                <Label text={c.name} position={[0, 1.7, 0]} size={0.35} />
+              </group>
+            )
+          )}
+          <Companion />
+          <Player />
+        </Physics>
+      </Suspense>
+    </>
+  );
+}
+export default function World() {
+  const quality = useGame((s) => s.settings.quality);
+  return (
+    <Canvas
+      shadows={quality !== 'low'}
+      dpr={quality === 'low' ? 1 : [1, 1.5]}
+      camera={{ position: [0, 6, 14], fov: 48, near: 0.1, far: 180 }}
+      gl={{ antialias: quality !== 'low', powerPreference: 'high-performance' }}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.1;
+      }}
+    >
+      <Scene />
+    </Canvas>
+  );
+}
