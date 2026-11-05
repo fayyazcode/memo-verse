@@ -23,6 +23,7 @@ import {
 import { useGame } from '@/game/store';
 import { validPlacement, type Block } from '@/game/rules';
 import { keys, motion, playerRuntime, navigation } from '@/game/input';
+import { touchInput, touchLook } from '@/game/touch';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
 const UP = new THREE.Vector3(0, 1, 0);
@@ -39,6 +40,7 @@ function Box({
   rotation?: Vec3;
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
   onPointerMove?: (e: ThreeEvent<PointerEvent>) => void;
+  onPointerUp?: (e: ThreeEvent<PointerEvent>) => void;
 }) {
   return (
     <mesh position={position} rotation={rotation} castShadow receiveShadow {...rest}>
@@ -596,10 +598,14 @@ function Player() {
     if (!paused) {
       dx = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
       dz = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
+      if (!dx && !dz) {
+        dx = touchInput.x;
+        dz = touchInput.z;
+      }
     }
     if (paused || dx || dz) navigation.destination = null;
     const destination = navigation.destination;
-    const dir = new THREE.Vector3(dx, 0, dz).normalize().applyAxisAngle(UP, motion.yaw);
+    const dir = new THREE.Vector3(dx, 0, dz).clampLength(0, 1).applyAxisAngle(UP, motion.yaw);
     if (destination && !paused) {
       const distance = Math.hypot(destination.x - p.x, destination.z - p.z);
       const arrival = destination.interaction
@@ -637,18 +643,18 @@ function Player() {
         );
     }
     const isMoving = dir.lengthSq() > 0,
-      isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight') || touchInput.sprint;
     if (isMoving !== moving) setMoving(isMoving);
     if (isRunning !== running) setRunning(isRunning);
     const speed = isRunning ? 7 : 4,
       velocity = b.linvel();
     let vy = paused ? 0 : velocity.y;
-    if (!paused && keys.has('Space') && grounded && !jumpLatch.current) {
+    if (!paused && (keys.has('Space') || touchInput.jump) && grounded && !jumpLatch.current) {
       vy = 6.8;
       jumpLatch.current = true;
       sound('jump', state.settings.effects * 0.4);
     }
-    if (!keys.has('Space')) jumpLatch.current = false;
+    if (!keys.has('Space') && !touchInput.jump) jumpLatch.current = false;
     b.setLinvel({ x: dir.x * speed, y: vy, z: dir.z * speed }, true);
     b.setGravityScale(paused ? 0 : 1, true);
     if (visual.current && isMoving) {
@@ -773,6 +779,7 @@ function Buildings() {
     item && ['block', 'lamp', 'stool', 'statue'].includes(item) ? (item as Block['item']) : 'block';
   const point = (e: ThreeEvent<PointerEvent>, existing?: Block) => {
     if (!build) return;
+    if (e.pointerType === 'touch' && (e.type !== 'pointerup' || touchLook.dragged)) return;
     e.stopPropagation();
     const normal = e.face?.normal.clone() ?? new THREE.Vector3(0, 1, 0);
     const v = e.point.clone().addScaledVector(normal, 0.02);
@@ -786,6 +793,10 @@ function Buildings() {
       setPreview(b);
       return;
     }
+    if (e.pointerType === 'touch' && touchInput.remove) {
+      if (existing) useGame.getState().remove(existing);
+      return;
+    }
     if (e.button === 2 && existing) useGame.getState().remove(existing);
     else if (e.button === 0) useGame.getState().place(b);
   };
@@ -796,6 +807,9 @@ function Buildings() {
         rotation={[-Math.PI / 2, 0, 0]}
         onPointerMove={(e) => point(e)}
         onPointerDown={(e) => point(e)}
+        onPointerUp={(e) => {
+          if (e.pointerType === 'touch') point(e);
+        }}
         receiveShadow
       >
         <planeGeometry args={[16, 16]} />
@@ -810,6 +824,9 @@ function Buildings() {
             color={b.item === 'lamp' ? '#e5d29a' : b.item === 'statue' ? '#a8b9a1' : '#b2936e'}
             onPointerMove={(e) => point(e, b)}
             onPointerDown={(e) => point(e, b)}
+            onPointerUp={(e) => {
+              if (e.pointerType === 'touch') point(e, b);
+            }}
           />
           {b.item === 'lamp' && !flags.includes(`off:lamp:${b.x}:${b.y}:${b.z}`) && (
             <pointLight
@@ -864,6 +881,7 @@ function Lighting() {
 }
 function clickWorld(e: ThreeEvent<PointerEvent>) {
   const state = useGame.getState();
+  if (e.pointerType === 'touch' && (e.type !== 'pointerup' || touchLook.dragged)) return;
   if (e.button !== 0 || !state.started || state.panel || state.dialogue || state.build) return;
   e.stopPropagation();
   let object: THREE.Object3D | null = e.object;
@@ -954,7 +972,12 @@ function Scene() {
       <Lighting />
       <Suspense fallback={null}>
         <Physics gravity={[0, -16, 0]} timeStep={1 / 60}>
-          <group onPointerDown={clickWorld}>
+          <group
+            onPointerDown={clickWorld}
+            onPointerUp={(e) => {
+              if (e.pointerType === 'touch') clickWorld(e);
+            }}
+          >
             <Terrain />
             <Scenery />
             <Buildings />

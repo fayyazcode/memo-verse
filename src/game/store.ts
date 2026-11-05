@@ -331,10 +331,16 @@ export const useGame = create<GameStore>((set, get) => ({
   init: async () => {
     try {
       const saved = await loadData();
-      let settings = defaultSettings;
+      let settings = {
+        ...defaultSettings,
+        quality:
+          typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+            ? ('low' as const)
+            : defaultSettings.quality,
+      };
       try {
         settings = {
-          ...defaultSettings,
+          ...settings,
           ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
         };
       } catch {}

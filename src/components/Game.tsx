@@ -49,6 +49,7 @@ import { available, deliver, ready, useGame, type Panel } from '@/game/store';
 import { count, levelFromXp, maxCreatureHp, validShelter } from '@/game/rules';
 import { keys, motion, navigation } from '@/game/input';
 import { ambience } from '@/game/audio';
+import TouchControls from './TouchControls';
 import CreaturePortrait from './CreaturePortrait';
 import { missionGuidance } from '@/game/guidance';
 const CreaturePreview = dynamic(() => import('./CreaturePreview'), { ssr: false });
@@ -280,6 +281,29 @@ function MainMenu() {
   );
 }
 function Hud() {
+  const [tasksCollapsed, setTasksCollapsed] = useState(false),
+    [mapCollapsed, setMapCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const small = matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+      const saved = JSON.parse(localStorage.getItem('momo-hud') || 'null');
+      setTasksCollapsed(saved?.tasks ?? small);
+      setMapCollapsed(saved?.map ?? small);
+    } catch {}
+  }, []);
+  const collapse = (which: 'tasks' | 'map', value: boolean) => {
+    if (which === 'tasks') setTasksCollapsed(value);
+    else setMapCollapsed(value);
+    try {
+      localStorage.setItem(
+        'momo-hud',
+        JSON.stringify({
+          tasks: which === 'tasks' ? value : tasksCollapsed,
+          map: which === 'map' ? value : mapCollapsed,
+        })
+      );
+    } catch {}
+  };
   const s = useGame((s) => s.save),
     panel = useGame((s) => s.panel),
     build = useGame((s) => s.build),
@@ -348,7 +372,20 @@ function Hud() {
             </div>
           </div>
         </div>
+        <div className="hud-collapse-row">
+          <button
+            className="hud-collapse-button"
+            aria-label={tasksCollapsed ? 'Expand tasks' : 'Minimize tasks'}
+            aria-expanded={!tasksCollapsed}
+            onClick={() => collapse('tasks', !tasksCollapsed)}
+          >
+            <Flag size={14} />
+            {tasksCollapsed ? 'Tasks' : 'Minimize tasks'}
+            <span>{tasksCollapsed ? '+' : '−'}</span>
+          </button>
+        </div>
         <div
+          hidden={tasksCollapsed}
           className="quest-card"
           tabIndex={0}
           aria-label="Active adventure helping hand"
@@ -442,7 +479,22 @@ function Hud() {
         )}
       </aside>
       <aside className="right-hud">
-        <button className="minimap" onClick={() => open('map')} aria-label="Open world map">
+        <button
+          className="hud-collapse-button"
+          aria-label={mapCollapsed ? 'Expand minimap' : 'Minimize minimap'}
+          aria-expanded={!mapCollapsed}
+          onClick={() => collapse('map', !mapCollapsed)}
+        >
+          <Map size={14} />
+          {mapCollapsed ? 'Map' : 'Minimize map'}
+          <span>{mapCollapsed ? '+' : '−'}</span>
+        </button>
+        <button
+          className="minimap"
+          hidden={mapCollapsed}
+          onClick={() => open('map')}
+          aria-label="Open world map"
+        >
           <MiniMap />
           <span className="minimap-bottom">
             <Compass size={12} /> {forest ? 'Greenwood' : 'Momo Village'}
@@ -1373,7 +1425,13 @@ export default function Game() {
       motion.pitch = Math.max(0.15, Math.min(1.1, motion.pitch + e.movementY * 0.004));
     };
     const wheel = (e: WheelEvent) => {
-      if ((e.target as HTMLElement).tagName !== 'CANVAS' || !useGame.getState().started) return;
+      if (
+        (e.target as HTMLElement).tagName !== 'CANVAS' ||
+        !useGame.getState().started ||
+        useGame.getState().panel ||
+        useGame.getState().dialogue
+      )
+        return;
       useGame.setState((s) => ({ selected: (s.selected + (e.deltaY > 0 ? 1 : 5)) % 6 }));
     };
     const context = (e: MouseEvent) => {
@@ -1421,9 +1479,7 @@ export default function Game() {
           {notice}
         </div>
       )}
-      <div className="small-screen-note">
-        MomoVerse is designed for a desktop with a keyboard and mouse.
-      </div>
+      {started && <TouchControls />}
     </main>
   );
 }

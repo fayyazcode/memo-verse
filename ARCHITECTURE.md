@@ -34,3 +34,7 @@ All current meshes, materials, icons, and sounds are locally generated or suppli
 ## Guidance and visual equipment
 
 `src/game/guidance.ts` projects active mission state into objective hints and world destinations without mutating progression. `CreaturePortrait` supplies original species illustrations; the lazy `CreaturePreview` renders the same improved `CreatureModel` used in-world and reports first-frame readiness. `HeldItem` renders owned hotbar selections at the character’s hand. Mining/picking intent and pickup effects are transient `playerRuntime` data, while inventory transactions and node eligibility remain in the game store. Menus use demand-driven world rendering; the separate pet preview continues animating.
+
+## Touch input
+
+`src/game/touch.ts` holds transient analog movement, jump/sprint/build mode, and camera gesture state. `TouchControls` owns pointer capture and lifecycle cleanup. The physics controller consumes analog input through the same camera-relative movement path as WASD. Touch world actions occur on release, while drags rotate the camera and suppress navigation/building taps. HUD collapse preferences live separately in localStorage and do not change saved adventures.

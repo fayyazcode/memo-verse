@@ -2156,3 +2156,522 @@ kbd {
   font-size: 8px;
   color: #758963;
 }
+/* Compact HUD and touch controls */
+[hidden] {
+  display: none !important;
+}
+.touch-controls {
+  display: none;
+}
+.hud-collapse-row {
+  pointer-events: auto;
+}
+.hud-collapse-button {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  background: #f8f6e9ed;
+  border: 1px solid #fff9e6;
+  border-radius: 9px;
+  padding: 7px 10px;
+  font-size: 10px;
+  color: #71845c;
+  box-shadow: 0 3px 12px #3445340c;
+}
+.hud-collapse-button > span {
+  margin-left: auto;
+  font-size: 15px;
+}
+.right-hud > .hud-collapse-button {
+  align-self: flex-end;
+}
+.world-container canvas {
+  touch-action: none;
+}
+.game-shell {
+  height: 100dvh;
+}
+.virtual-joystick {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  position: absolute;
+  width: 116px;
+  height: 116px;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: calc(152px + env(safe-area-inset-bottom));
+  border-radius: 50%;
+  background: #faf6e540;
+  border: 1px solid #fff9e891;
+  box-shadow: inset 0 0 20px #5b704d14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.joystick-ring {
+  position: absolute;
+  width: 74px;
+  height: 74px;
+  border: 1px solid #fffce280;
+  border-radius: 50%;
+}
+.joystick-knob {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #faf8e9d9;
+  border: 2px solid #fffbe9;
+  box-shadow: 0 4px 10px #34453430;
+  color: #738a58;
+  pointer-events: none;
+}
+.virtual-joystick > small {
+  position: absolute;
+  bottom: 8px;
+  font-size: 7px;
+  letter-spacing: 1.4px;
+  color: #687e54;
+}
+.touch-actions {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(152px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 56px 64px;
+  gap: 8px;
+  pointer-events: auto;
+}
+.touch-actions button {
+  border-radius: 16px;
+  min-height: 54px;
+  background: #f8f5e6de;
+  border: 1px solid #fff5dd;
+  box-shadow: 0 3px 10px #34453417;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  color: #6e8458;
+  touch-action: none;
+  user-select: none;
+}
+.touch-actions small {
+  font-size: 8px;
+}
+.touch-actions .touch-interact {
+  background: #718752e8;
+  color: #fffbe9;
+}
+.touch-actions .touch-interact small {
+  font-size: 7px;
+}
+.touch-utilities {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: calc(282px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+.touch-utilities button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+  background: #f8f5e6df;
+  border: 1px solid #fff7df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 8px;
+  touch-action: manipulation;
+}
+.touch-utilities button[aria-pressed='true'] {
+  background: #6f8754;
+  color: #fff9e6;
+}
+.touch-camera-hint {
+  position: absolute;
+  bottom: calc(285px + env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  font-size: 8px;
+  color: #5e784b;
+  text-shadow: 0 1px 4px #f8f4e4;
+  pointer-events: none;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .touch-controls {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9;
+  }
+  .game-top {
+    top: calc(10px + env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+  }
+  .game-top .brand {
+    font-size: 16px;
+  }
+  .game-top .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+  .top-actions .icon-button {
+    height: 40px;
+    width: 40px;
+  }
+  .location-pill,
+  .save-indicator,
+  .region-caption,
+  .bottom-hint,
+  .small-screen-note {
+    display: none !important;
+  }
+  .left-hud {
+    top: calc(60px + env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    width: 180px;
+    gap: 8px;
+  }
+  .right-hud {
+    top: calc(60px + env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 120px;
+    gap: 8px;
+  }
+  .player-card {
+    padding: 9px;
+    gap: 8px;
+  }
+  .portrait {
+    width: 32px;
+    height: 34px;
+    font-size: 22px;
+  }
+  .player-detail b {
+    font-size: 9px;
+  }
+  .player-detail > div:first-child {
+    margin: 1px 0 6px;
+  }
+  .player-stats {
+    font-size: 6px;
+  }
+  .quest-card {
+    width: 220px;
+    max-height: 40dvh;
+    overflow: auto;
+  }
+  .quest-card h3 {
+    font-size: 13px;
+  }
+  .quest-card > p,
+  .objective-list > div {
+    font-size: 10px;
+  }
+  .quest-card .adventure-help {
+    position: static;
+    width: auto;
+    max-height: 28vh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 14px;
+  }
+  .quest-card:focus-within .adventure-help {
+    display: block;
+  }
+  .hud-collapse-button {
+    min-height: 36px;
+    font-size: 10px;
+  }
+  .companion-card {
+    padding: 8px;
+    gap: 6px;
+  }
+  .companion-card small {
+    font-size: 7px;
+  }
+  .companion-icon {
+    width: 27px;
+    height: 27px;
+  }
+  .companion-card > kbd {
+    display: none;
+  }
+  .minimap {
+    width: 120px;
+  }
+  .map-art {
+    height: 100px;
+  }
+  .coin-pill {
+    min-width: 90px;
+  }
+  .game-bottom {
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    left: 8px;
+    right: 8px;
+  }
+  .hotbar-slot {
+    width: 40px;
+    height: 42px;
+  }
+  .hotbar {
+    gap: 4px;
+    padding: 5px;
+  }
+  .hotbar-caption {
+    font-size: 7px;
+    letter-spacing: 0.6px;
+  }
+  .menu-dock {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    padding: 0;
+    gap: 8px;
+  }
+  .menu-dock button {
+    width: 42px;
+    height: 40px;
+  }
+  .menu-dock kbd {
+    display: none;
+  }
+  .interaction {
+    bottom: calc(270px + env(safe-area-inset-bottom));
+    max-width: 75vw;
+    padding: 9px 12px;
+    z-index: 5;
+  }
+  .interaction > kbd {
+    display: none;
+  }
+  .interaction strong {
+    font-size: 11px;
+  }
+  .interaction small {
+    font-size: 7px;
+  }
+  .build-banner {
+    top: calc(52px + env(safe-area-inset-top));
+    font-size: 9px;
+    max-width: 75%;
+    z-index: 10;
+  }
+  .build-banner span,
+  .build-banner kbd {
+    display: none;
+  }
+  .combat-banner {
+    top: calc(52px + env(safe-area-inset-top));
+    padding: 8px 10px;
+    max-width: 90%;
+    gap: 8px;
+  }
+  .combat-banner div > span {
+    display: none;
+  }
+  .modal-backdrop {
+    padding: 8px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .panel {
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    width: min(780px, 100%);
+    border-radius: 13px;
+  }
+  .panel-header {
+    padding: 15px;
+  }
+  .panel-header h2 {
+    font-size: 21px;
+  }
+  .panel-header .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .panel-body {
+    padding: 16px;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .panel .primary,
+  .panel .secondary,
+  .panel .text-button {
+    min-height: 44px;
+  }
+  .creature-detail-button {
+    min-height: 44px;
+  }
+  .settings-list > label {
+    min-height: 44px;
+  }
+  .map-legend {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .map-art.large {
+    height: min(390px, 45dvh);
+  }
+  .dialogue-wrap {
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  .dialogue-card {
+    width: min(850px, 100%);
+    max-height: 80dvh;
+    overflow: auto;
+    padding: 16px;
+  }
+  .dialogue-character {
+    display: none;
+  }
+  .dialogue-buttons button,
+  .dialogue-option {
+    min-height: 44px;
+  }
+  .dialogue-content > p {
+    font-size: 12px;
+  }
+  .toast {
+    top: calc(56px + env(safe-area-inset-top));
+    font-size: 11px;
+    max-width: 90vw;
+    padding: 10px 14px;
+  }
+  .welcome-copy {
+    top: 22%;
+    left: 7%;
+    max-width: 86%;
+  }
+  .welcome h1 {
+    font-size: clamp(38px, 9vw, 62px);
+    letter-spacing: -2px;
+  }
+  .welcome-copy > p {
+    font-size: 12px;
+  }
+  .welcome-features {
+    margin-top: 20px;
+    gap: 14px;
+    font-size: 9px;
+  }
+  .welcome-top {
+    top: calc(16px + env(safe-area-inset-top));
+    left: 6%;
+    right: 5%;
+  }
+  .welcome-top .brand {
+    font-size: 20px;
+  }
+  .alpha {
+    display: none;
+  }
+  .welcome-bottom {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    font-size: 9px;
+  }
+  .welcome-bottom > span:last-child,
+  .world-caption {
+    display: none;
+  }
+  .world-loading {
+    font-size: 12px;
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .left-hud {
+    width: 176px;
+    top: 56px;
+  }
+  .right-hud {
+    top: 56px;
+  }
+  .touch-actions,
+  .virtual-joystick {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .virtual-joystick {
+    width: 104px;
+    height: 104px;
+  }
+  .touch-utilities {
+    bottom: calc(132px + env(safe-area-inset-bottom));
+  }
+  .touch-camera-hint {
+    bottom: calc(144px + env(safe-area-inset-bottom));
+    right: 20px;
+  }
+  .game-bottom {
+    bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .menu-dock {
+    top: 10px;
+    bottom: auto;
+  }
+  .menu-dock button {
+    width: 36px;
+    height: 34px;
+  }
+  .interaction {
+    bottom: 105px;
+  }
+  .companion-card {
+    display: none;
+  }
+  .quest-card {
+    max-height: 40dvh;
+  }
+  .welcome-copy {
+    top: 21%;
+  }
+  .welcome h1 {
+    font-size: 38px;
+    margin: 10px 0;
+  }
+  .welcome-copy > p {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .welcome-actions {
+    margin-top: 14px;
+  }
+  .welcome-features {
+    display: none;
+  }
+  .welcome-bottom {
+    bottom: 10px;
+  }
+  .welcome-top {
+    top: 10px;
+  }
+  .welcome-copy .large {
+    min-height: 44px;
+    padding: 12px 18px;
+  }
+  .welcome-copy .eyebrow {
+    font-size: 7px;
+  }
+  .welcome-bottom > span:first-child {
+    display: none;
+  }
+}
+
+.touch-controls {
+  -webkit-tap-highlight-color: transparent;
+}

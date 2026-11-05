@@ -6,7 +6,7 @@ The approved [master specification](docs/MOMOVERSE_SPEC.md) is the source of tru
 
 Explore → meet villagers → accept missions → gather → craft → befriend → use companion utilities → construct shelter → repair passage → resolve Guardian → claim finale reward.
 
-- Single-player, desktop keyboard/mouse, original procedural characters and environment.
+- Single-player, desktop keyboard/mouse plus mobile joystick/touch controls, original procedural characters and environment. Mobile controls extend the original desktop-only brief at the user’s request.
 - Bounded 256 × 256 world, with village and forest content concentrated around the spawn.
 - Five named NPCs; ten data-driven missions; four original species; one active companion.
 - 24 inventory slots, 99-unit material stacks, six hotbar references (not extra inventory).

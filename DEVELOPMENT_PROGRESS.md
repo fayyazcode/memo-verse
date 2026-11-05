@@ -39,3 +39,9 @@ The four original species have more distinct 3D features and illustrated collect
 Owned hotbar items appear in the character’s hand: pickaxe, treats, food, materials, and construction items. Mining uses a swinging tool/punch pose; harvesting plants uses a bent reaching pose. The character faces the target and briefly stops moving during the action. Nodes shake on impact and resource fragments travel toward the player. Reward eligibility and single-yield node rules remain unchanged. An owned pickaxe is automatically used visually during mining, then the selected item returns to the hand.
 
 Latest combined validation: frozen dependencies unchanged; production build and TypeScript pass; all 37 logic tests and all seven production-browser tests pass. The pickaxe, cookie and live 3D creature-card screenshots were visually reviewed. Saved-game camera alignment now happens immediately to keep mouse targets stable at startup.
+
+## Mobile input and compact HUD
+
+Added an analog virtual joystick, camera drag/tap distinction, jump/interact/combat controls, sprint toggle, companion menu, and touch building placement/removal. Desktop controls remain available. Task and minimap collapse controls work on all layouts and remember browser preferences; small/touch layouts start collapsed. Mobile panels scroll, action controls avoid the hotbar, viewport/safe-area handling supports orientation changes, and coarse-pointer devices default to low graphics unless overridden. Movement and held buttons reset on release/cancel, menu changes, blur, visibility changes, and resize. Physical phone performance remains unqualified.
+
+Mobile release checks: production build/TypeScript pass; 40 logic tests and all nine browser scenarios pass. Both touch scenarios pass again after the final input-reset adjustment. Portrait and landscape screenshots were visually reviewed. These are Chromium-emulated touch checks; physical-device FPS and Safari remain unqualified.

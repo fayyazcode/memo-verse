@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the development server in a desktop browser with WebGL 2. No external credentials are required for guest play. `npm run build` creates the production build; `npm start` runs it. The cloud execution sandbox may require elevated execution for registry access, binding the server port, browser launch, and Next.js build subprocesses.
+Open the development server in a browser with WebGL 2. Desktop keyboard/mouse and mobile touch controls are supported. No external credentials are required for guest play. `npm run build` creates the production build; `npm start` runs it. The cloud execution sandbox may require elevated execution for registry access, binding the server port, browser launch, and Next.js build subprocesses.
 
 ```sh
 npm run typecheck
@@ -46,3 +46,9 @@ Hover or keyboard-focus the active adventure card for step-by-step help. Gold nu
 In the creature collection (C), choose **View creature card** for an original collectible-style reference with a rotating 3D model, current stats, attacks, exploration utility, and befriending information.
 
 Select an owned item on the hotbar (1–6) to hold its 3D model. Mining and gathering play different actions with target impacts and pickup particles. Unowned ghost slots leave the hand empty.
+
+## Mobile controls
+
+The left joystick moves the character; drag the world to rotate the camera, or tap the ground to move to it. Use Jump, Interact / Gather, Attack, and Ability on the right. Run toggles sprint; Pet opens companion commands; Build toggles construction. In building mode choose Place or Remove, then tap a block or the housing plot. Joystick release/cancellation, menus, backgrounding, and orientation changes clear held inputs.
+
+Tasks and the minimap start minimized on small/touch screens. Use Tasks/Map to expand them and the minus buttons to minimize them again; this preference is remembered on the browser. The bottom menu opens inventory, journal, creatures, and full map. Touch devices default to low graphics unless a quality preference was already saved. Portrait and landscape layouts include safe-area spacing. Physical Android/iOS performance and Safari compatibility still need device qualification; current touch validation uses Chromium mobile emulation.
