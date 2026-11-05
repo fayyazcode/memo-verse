@@ -314,6 +314,7 @@ function Hud() {
   const level = levelFromXp(s.xp);
   const activeQuest = QUESTS.find((q) => s.quests[q.id]?.status === 'active');
   const targetName =
+    (target === 'plant' && s.flags.includes('ability:plant') ? 'Moonflower · watered' : null) ??
     NPCS.find((n) => n.id === target)?.name ??
     OBJECTS.find((o) => o.id === target)?.name ??
     (target?.startsWith('lamp:') ? 'Crystal lamp' : null) ??

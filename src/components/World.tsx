@@ -406,6 +406,12 @@ function ObjectMesh({ id }: { id: string }) {
   const used = useGame((s) => s.save.nodes[id] ?? 0),
     time = useGame((s) => Math.floor(s.save.playTime / 10)),
     done = useGame((s) => s.save.flags.includes('ability:' + id)),
+    markedPlant = useGame(
+      (s) =>
+        id === 'plant' &&
+        s.save.quests.q07?.status === 'active' &&
+        !s.save.flags.includes('ability:plant')
+    ),
     guardianHp = useGame((s) => (id === 'guardian' ? s.save.enemyHp : 0)),
     target = useGame((s) => s.target === id),
     telegraph = useGame(
@@ -503,14 +509,75 @@ function ObjectMesh({ id }: { id: string }) {
         </>
       ) : obj.id === 'plant' ? (
         <>
-          <mesh position={[0, 0.6, 0]}>
-            <coneGeometry args={[0.4, 1.2, 5]} />
-            <meshStandardMaterial color={done ? '#a7c785' : '#8e9c73'} />
+          <mesh position={[0, 0.1, 0]} receiveShadow>
+            <cylinderGeometry args={[0.95, 1, 0.2, 12]} />
+            <meshStandardMaterial color="#827251" />
           </mesh>
-          <mesh position={[0, 1.3, 0]}>
-            <icosahedronGeometry args={[0.3, 1]} />
-            <meshStandardMaterial color={done ? '#e8d9ac' : '#b4b999'} />
+          <mesh position={[0, 0.7, 0]} castShadow>
+            <cylinderGeometry args={[0.07, 0.1, 1.2, 8]} />
+            <meshStandardMaterial color={done ? '#81a96a' : '#739362'} />
           </mesh>
+          {[-1, 1].map((side) => (
+            <mesh
+              key={side}
+              position={[side * 0.28, 0.55, 0]}
+              scale={[0.4, 0.12, 0.2]}
+              rotation={[0, 0, side * 0.4]}
+              castShadow
+            >
+              <sphereGeometry args={[1, 12, 8]} />
+              <meshStandardMaterial color="#86ad6b" />
+            </mesh>
+          ))}
+          {Array.from({ length: 6 }, (_, i) => {
+            const angle = (i * Math.PI) / 3;
+            return (
+              <mesh
+                key={i}
+                position={[Math.cos(angle) * 0.39, 1.3, Math.sin(angle) * 0.39]}
+                rotation={[0, -angle, 0]}
+                scale={[0.48, 0.13, 0.22]}
+                castShadow
+              >
+                <sphereGeometry args={[1, 16, 10]} />
+                <meshStandardMaterial
+                  color={done ? '#e3d2f8' : '#f5edff'}
+                  emissive="#b5a0d4"
+                  emissiveIntensity={done ? 0.3 : 0.13}
+                />
+              </mesh>
+            );
+          })}
+          <mesh position={[0, 1.35, 0]}>
+            <sphereGeometry args={[0.23, 16, 10]} />
+            <meshStandardMaterial
+              color={done ? '#a6d7ec' : '#dcc477'}
+              emissive={done ? '#80b5d1' : '#bba453'}
+              emissiveIntensity={0.35}
+            />
+          </mesh>
+          <Label
+            text={done ? 'Moonflower · watered' : 'Thirsty moonflower'}
+            position={[0, 2.05, 0]}
+            color={done ? '#b9e1eb' : '#fff1bc'}
+            size={0.6}
+          />
+          {markedPlant && (
+            <>
+              <mesh position={[0, 0.22, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[1.05, 1.22, 40]} />
+                <meshBasicMaterial color="#f5d574" transparent opacity={0.9} />
+              </mesh>
+              <mesh position={[0, 2.65, 0]} rotation={[0, 0, Math.PI]}>
+                <coneGeometry args={[0.2, 0.38, 4]} />
+                <meshBasicMaterial color="#f5d574" />
+              </mesh>
+              <mesh position={[0, 1.65, 0]}>
+                <cylinderGeometry args={[0.12, 0.42, 3, 16, 1, true]} />
+                <meshBasicMaterial color="#f9df96" transparent opacity={0.1} depthWrite={false} />
+              </mesh>
+            </>
+          )}
         </>
       ) : obj.id === 'toughNode' || obj.id === 'passage' ? (
         <Box

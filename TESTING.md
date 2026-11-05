@@ -11,7 +11,7 @@ The browser configuration uses `/usr/bin/chromium` with SwiftShader for this clo
 
 ## What is covered
 
-40 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
+41 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
 
 The campaign integration test completes all ten missions from an initially empty inventory using game actions. It directly positions the player and advances attack cooldown state for deterministic execution. It validates system connectivity; it is not a manual or browser playthrough and does not prove encounter timing, navigation, visual quality, or performance.
 
@@ -37,3 +37,5 @@ Latest combined run: 37 logic tests and all seven browser tests passed. The full
 Mobile tests use Chromium touch emulation at 390 × 844 and 844 × 390. Native CDP touch events drive the joystick while observing actual player position updates. Tests also check release/interrupt reset, task/minimap toggles, action availability, orientation bounds, save-and-quit, touch NPC dialogue, and that a camera drag does not start click-to-move. These checks do not establish performance or compatibility on physical iOS/Android devices. Pure tests cover joystick dead zone, analog strength, diagonal clamping, and interruption reset.
 
 Mobile release validation: production build and TypeScript pass, all 40 logic tests pass, and the full nine-test browser suite passes. Both mobile tests were repeated successfully on the final input-reset build. Portrait/landscape screenshots were reviewed and touch controls were moved clear of the hotbar.
+
+Moonflower regression: `e2e/moonflower.spec.ts` restores an active watering objective, finds the visible interaction target, reads its map directions, waters it with Aquabub, verifies the watered state and checks the reward destination replaces the watering marker. This test and the existing guidance/card browser test passed for the visibility fix; all 41 logic tests and the build also passed.

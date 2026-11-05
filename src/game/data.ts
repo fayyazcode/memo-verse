@@ -437,7 +437,7 @@ export const OBJECTS: WorldObject[] = [
     id: 'plant',
     kind: 'utility',
     name: 'Thirsty moonflower',
-    pos: [43, 0, -13],
+    pos: [45, 0, -14],
     requires: 'aquabub',
   },
   {

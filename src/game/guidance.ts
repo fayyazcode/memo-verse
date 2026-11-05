@@ -105,7 +105,7 @@ export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
       if (objective.event === 'ability') {
         const obj = OBJECTS.find((o) => o.id === target)!;
         position = obj.pos;
-        help = `Summon ${CREATURES[obj.requires!].name} from C, then click ${obj.name} or press E nearby. Heal defeated companions at the village station for free.`;
+        help = `${target === 'plant' ? 'Find the large white-and-purple moonflower on the riverbank at the east end of the wooden bridge, near Aquabub. Look for its nameplate and golden quest beacon. On the full map, select the Water the marked plant destination. ' : ''}Summon ${CREATURES[obj.requires!].name} from the creature collection (C on desktop, or the paw icon in the bottom menu), then click ${obj.name} or use Interact nearby. Heal defeated companions at the village station for free.`;
       }
       if (objective.event === 'shelter') {
         position = [2, 0, 27];

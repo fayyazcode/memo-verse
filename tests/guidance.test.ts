@@ -48,3 +48,16 @@ describe('mission helping hand', () => {
     expect(hints.find((h) => h.id === 'q09:shelter')?.help).toContain('clear doorway');
   });
 });
+
+describe('moonflower directions', () => {
+  it('points the watering objective to the bridge-side plant and clears it after watering', () => {
+    const s = freshSave();
+    s.quests.q07 = { status: 'active', progress: {} };
+    const hint = missionGuidance(s).find((h) => h.id === 'q07:water')!;
+    expect(hint.position).toEqual(OBJECTS.find((o) => o.id === 'plant')!.pos);
+    expect(hint.help).toContain('east end of the wooden bridge');
+    expect(hint.help).toContain('golden quest beacon');
+    s.quests.q07.progress.water = 1;
+    expect(missionGuidance(s).some((h) => h.id === 'q07:water')).toBe(false);
+  });
+});
