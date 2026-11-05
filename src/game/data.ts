@@ -75,7 +75,7 @@ export const CREATURES: Record<
     type: 'Water',
     color: '#70c1d4',
     food: 'fruit',
-    pos: [40, 0, -15],
+    pos: [46, 0, -22],
     ability: 'Water marked plants',
     description: 'A little river spirit with a very big curiosity.',
   },
@@ -381,7 +381,11 @@ export const OBJECTS: WorldObject[] = [
     id: `rock${i}`,
     kind: 'resource' as const,
     name: 'Stone deposit',
-    pos: [28 + i * 4, 0, -8 - (i % 3) * 4] as Vec3,
+    pos: (i === 2
+      ? [32, 0, -20]
+      : i === 3
+        ? [45, 0, -8]
+        : [28 + i * 4, 0, -8 - (i % 3) * 4]) as Vec3,
     item: 'stone' as const,
     amount: 3,
   })),
@@ -421,7 +425,7 @@ export const OBJECTS: WorldObject[] = [
     id: 'fruit',
     kind: 'resource',
     name: 'River fruit',
-    pos: [37, 0, -20],
+    pos: [33, 0, -21],
     item: 'fruit',
     amount: 2,
   },

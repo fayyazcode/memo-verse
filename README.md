@@ -52,3 +52,11 @@ Select an owned item on the hotbar (1–6) to hold its 3D model. Mining and gath
 The left joystick moves the character; drag the world to rotate the camera, or tap the ground to move to it. Use Jump, Interact / Gather, Attack, and Ability on the right. Run toggles sprint; Pet opens companion commands; Build toggles construction. In building mode choose Place or Remove, then tap a block or the housing plot. Joystick release/cancellation, menus, backgrounding, and orientation changes clear held inputs.
 
 Tasks and the minimap start minimized on small/touch screens. Use Tasks/Map to expand them and the minus buttons to minimize them again; this preference is remembered on the browser. The bottom menu opens inventory, journal, creatures, and full map. Touch devices default to low graphics unless a quality preference was already saved. Portrait and landscape layouts include safe-area spacing. Physical Android/iOS performance and Safari compatibility still need device qualification; current touch validation uses Chromium mobile emulation.
+
+## Crafting batches
+
+Each recipe has a batch slider, number input, and Max button. The recipe shows total ingredients and total output before you craft. Wooden blocks make two per batch: six batches consume six wood and produce twelve blocks. Max considers both materials and inventory space, up to 99 batches per transaction. A failed batch consumes no ingredients.
+
+## River and bridge
+
+The river has an actual shallow bed, sloping banks, animated surface ripples, shoreline highlights and a moving-player wake. Entering the water reduces movement speed and applies buoyancy/vertical drag; jump or walk up a bank to leave. The wooden bridge arches upward through individual planks with matching collision surfaces and curved railings. Aquabub waits on the dry eastern riverbank beyond the bridge. River fruit and stone deposits are on the banks, clear of the water and walkway.

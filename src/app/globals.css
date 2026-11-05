@@ -2675,3 +2675,93 @@ kbd {
 .touch-controls {
   -webkit-tap-highlight-color: transparent;
 }
+.batch-recipe {
+  align-items: flex-start;
+}
+.batch-recipe-info {
+  min-width: 0;
+}
+.batch-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.batch-controls > label {
+  font-size: 10px;
+  color: #758866;
+}
+.batch-controls > label small {
+  font-size: 8px;
+}
+.batch-controls input[type='range'] {
+  flex: 1;
+  min-width: 90px;
+  max-width: 180px;
+  accent-color: #718750;
+  cursor: pointer;
+}
+.batch-controls input[type='number'] {
+  width: 52px;
+  padding: 6px;
+  border: 1px solid #d4ddc3;
+  border-radius: 6px;
+  background: #faf8ee;
+  color: #5e764c;
+  font-size: 11px;
+}
+.batch-controls .secondary {
+  padding: 6px 9px;
+  min-height: 30px;
+  font-size: 9px;
+}
+.craft-capacity-note {
+  display: block;
+  margin-top: 8px;
+  color: #a38364 !important;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .batch-recipe {
+    flex-wrap: wrap;
+  }
+  .batch-recipe-info {
+    flex-basis: calc(100% - 70px) !important;
+  }
+  .batch-controls input {
+    min-height: 36px;
+  }
+  .batch-controls .secondary {
+    min-height: 44px;
+  }
+  .batch-recipe > .primary {
+    margin-left: auto;
+  }
+}
+.water-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 145px;
+  transform: translateX(-50%);
+  background: #eef7e9dc;
+  border: 1px solid #d4ece4;
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: #4e7f79;
+  font-size: 10px;
+  text-align: center;
+  max-width: 80vw;
+  pointer-events: none;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .water-hint {
+    bottom: 300px;
+    font-size: 9px;
+    min-width: 190px;
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .water-hint {
+    bottom: 100px;
+  }
+}

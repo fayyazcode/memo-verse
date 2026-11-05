@@ -11,7 +11,7 @@ The browser configuration uses `/usr/bin/chromium` with SwiftShader for this clo
 
 ## What is covered
 
-41 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
+55 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
 
 The campaign integration test completes all ten missions from an initially empty inventory using game actions. It directly positions the player and advances attack cooldown state for deterministic execution. It validates system connectivity; it is not a manual or browser playthrough and does not prove encounter timing, navigation, visual quality, or performance.
 
@@ -39,3 +39,9 @@ Mobile tests use Chromium touch emulation at 390 × 844 and 844 × 390. Native C
 Mobile release validation: production build and TypeScript pass, all 40 logic tests pass, and the full nine-test browser suite passes. Both mobile tests were repeated successfully on the final input-reset build. Portrait/landscape screenshots were reviewed and touch controls were moved clear of the hotbar.
 
 Moonflower regression: `e2e/moonflower.spec.ts` restores an active watering objective, finds the visible interaction target, reads its map directions, waters it with Aquabub, verifies the watered state and checks the reward destination replaces the watering marker. This test and the existing guidance/card browser test passed for the visibility fix; all 41 logic tests and the build also passed.
+
+Batch crafting adds eight logic tests for scaled costs/output, insufficient ingredients, inventory overflow, non-monotonic slot availability, invalid quantities, Max limits, quest output counting, and single-batch compatibility. The focused browser scenario uses the numeric field and range keyboard controls, crafts twelve wooden blocks from six wood, checks remaining materials, uses Max, and verifies the building quest counts all twelve outputs.
+
+River checks validate arch endpoints/symmetry/center height, dry Aquabub placement, resource clearance, submersion bounds, drag/buoyancy and frame-delta limits. Browser traversal starts on the arch, walks to the bank, climbs back up and checks real saved player heights. A second scenario checks stable wading above the bed, shader errors and Aquabub befriending from the dry shore. Nearby moonflower watering and the batch-crafting UI were also rerun successfully against the river build.
+
+Combined crafting/river release: build and TypeScript pass; all 55 logic tests pass. Focused browser checks passed for batch crafting, moonflower watering, bridge traversal and wading/Aquabub collection. The final cleaned river layout was rechecked for traversal and water/creature access; the traversal assertion compares actual player height with the reached plank to tolerate software-renderer input timing. Screenshots reviewed.

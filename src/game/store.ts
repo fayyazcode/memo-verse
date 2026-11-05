@@ -1,3 +1,4 @@
+import { craftBatch } from './crafting';
 import { create } from 'zustand';
 import { openDB } from 'idb';
 import {
@@ -294,7 +295,7 @@ export type GameStore = {
   claim: (id: string) => void;
   interact: () => void;
   gather: (id: string) => void;
-  craft: (id: ItemId) => void;
+  craft: (id: ItemId, batches?: number) => void;
   trade: (id: ItemId, buy: boolean) => void;
   summon: (id: Species) => void;
   feed: (id: Species) => void;
@@ -576,7 +577,7 @@ export const useGame = create<GameStore>((set, get) => ({
     sound(playerRuntime.action === 'mine' ? 'hit' : 'gather', get().settings.effects);
     void get().persist();
   },
-  craft: (id) => {
+  craft: (id, batches = 1) => {
     const s = get().save,
       r = RECIPES.find((r) => r.id === id);
     if (!r || s.quests[r.unlock]?.status !== 'complete') return;
@@ -588,13 +589,13 @@ export const useGame = create<GameStore>((set, get) => ({
       get().notify('A healthy Emberfox is needed to help process wood.');
       return;
     }
-    const inv = transact(s.inventory, r.ingredients, { [id]: r.output });
+    const inv = craftBatch(s.inventory, r, batches);
     if (!inv) {
       get().notify('Check ingredients and available inventory space.');
       return;
     }
-    set({ save: event({ ...s, inventory: inv }, 'craft', id, r.output) });
-    get().notify(`Crafted ${r.output} ${ITEMS[id].name}`);
+    set({ save: event({ ...s, inventory: inv }, 'craft', id, r.output * batches) });
+    get().notify(`Crafted ${r.output * batches} ${ITEMS[id].name}`);
     sound('gather', get().settings.effects);
     void get().persist();
   },

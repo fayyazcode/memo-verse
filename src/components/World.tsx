@@ -24,6 +24,8 @@ import { useGame } from '@/game/store';
 import { validPlacement, type Block } from '@/game/rules';
 import { keys, motion, playerRuntime, navigation } from '@/game/input';
 import { touchInput, touchLook } from '@/game/touch';
+import { ArchedBridge, RiverWater } from './River';
+import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
 const UP = new THREE.Vector3(0, 1, 0);
@@ -176,26 +178,36 @@ function Terrain() {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const tiles = useMemo(() => {
     const a = [];
-    for (let x = -128; x < 128; x += 4)
-      for (let z = -128; z < 128; z += 4)
+    const xs = [
+      ...new Set([...Array.from({ length: 65 }, (_, i) => -128 + i * 4), RIVER.left, RIVER.right]),
+    ].sort((a, b) => a - b);
+    const zs = [
+      ...new Set([...Array.from({ length: 65 }, (_, i) => -128 + i * 4), RIVER.north, RIVER.south]),
+    ].sort((a, b) => a - b);
+    for (let i = 0; i < xs.length - 1; i++)
+      for (let j = 0; j < zs.length - 1; j++) {
+        const x = xs[i],
+          z = zs[j],
+          width = xs[i + 1] - x,
+          depth = zs[j + 1] - z;
+        const river = x >= RIVER.left && x < RIVER.right && z >= RIVER.north && z < RIVER.south;
         a.push({
           x,
           z,
-          color:
-            ((x * 31 + z * 17) & 7) < 2
-              ? '#91b57b'
-              : ((x * 7 + z * 11) & 7) < 3
-                ? '#96b981'
-                : '#9dbe87',
+          width,
+          depth,
+          river,
+          color: river ? '#b7b091' : ((i * 31 + j * 17) & 7) < 3 ? '#96b981' : '#9dbe87',
         });
+      }
     return a;
   }, []);
   useEffect(() => {
     if (!mesh.current) return;
     const m = new THREE.Object3D();
     tiles.forEach((t, i) => {
-      m.position.set(t.x + 2, -0.6, t.z + 2);
-      m.scale.set(4, 1.2, 4);
+      m.position.set(t.x + t.width / 2, t.river ? RIVER.bed - 0.6 : -0.6, t.z + t.depth / 2);
+      m.scale.set(t.width, 1.2, t.depth);
       m.updateMatrix();
       mesh.current!.setMatrixAt(i, m.matrix);
       mesh.current!.setColorAt(i, new THREE.Color(t.color));
@@ -210,7 +222,19 @@ function Terrain() {
         <meshStandardMaterial roughness={1} />
       </instancedMesh>
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[128, 0.6, 128]} position={[0, -0.6, 0]} />
+        <CuboidCollider args={[81.25, 0.6, 128]} position={[-46.75, -0.6, 0]} />
+        <CuboidCollider args={[42.25, 0.6, 128]} position={[85.75, -0.6, 0]} />
+        <CuboidCollider args={[4.5, 0.6, 42.5]} position={[39, -0.6, -85.5]} />
+        <CuboidCollider args={[4.5, 0.6, 67.5]} position={[39, -0.6, 60.5]} />
+        <CuboidCollider args={[4.5, 0.6, 18]} position={[39, RIVER.bed - 0.6, -25]} />
+        {[-1, 1].map((side) => (
+          <CuboidCollider
+            key={side}
+            args={[Math.hypot(1, 0.95) / 2, 0.1, 18]}
+            position={[side === -1 ? 35 : 43, -0.475, -25]}
+            rotation={[0, 0, side * Math.atan(0.95)]}
+          />
+        ))}
         {[
           [128, 0],
           [-128, 0],
@@ -224,8 +248,7 @@ function Terrain() {
         <circleGeometry args={[9, 12]} />
         <meshStandardMaterial color="#c5bea0" />
       </mesh>
-      <Box position={[39, 0.025, -25]} size={[9, 0.05, 36]} color="#8fbfc1" />
-      <Box position={[37, 0.04, -25]} size={[1, 0.03, 34]} color="#aed4ce" />
+      <RiverWater />
       {Array.from({ length: 28 }, (_, i) => (
         <Box
           key={i}
@@ -235,13 +258,7 @@ function Terrain() {
         />
       ))}
       <Box position={[3, 0.025, 16]} size={[3, 0.05, 18]} color="#c6bc9e" />
-      <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[4.5, 0.4, 1.7]} position={[39, 0.3, -15]} />
-        <Box position={[39, 0.7, -15]} size={[9, 0.2, 3.4]} color="#b39670" />
-        {[-16.7, -13.3].map((z) => (
-          <Box key={z} position={[39, 1.3, z]} size={[9, 0.12, 0.12]} color="#8a785d" />
-        ))}
-      </RigidBody>
+      <ArchedBridge />
     </>
   );
 }
@@ -309,7 +326,11 @@ function Scenery() {
         const x = ((i * 37) % 211) - 100,
           z = ((i * 61) % 211) - 100;
         return { x, z, s: 0.8 + (i % 5) * 0.13 };
-      }).filter((t) => !(t.x > -26 && t.x < 99 && t.z > -30 && t.z < 49)),
+      }).filter(
+        (t) =>
+          !(t.x > -26 && t.x < 99 && t.z > -30 && t.z < 49) &&
+          !(t.x > RIVER.left && t.x < RIVER.right && t.z > RIVER.north && t.z < RIVER.south)
+      ),
     []
   );
   return (
@@ -713,9 +734,9 @@ function Player() {
       isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight') || touchInput.sprint;
     if (isMoving !== moving) setMoving(isMoving);
     if (isRunning !== running) setRunning(isRunning);
-    const speed = isRunning ? 7 : 4,
-      velocity = b.linvel();
-    let vy = paused ? 0 : velocity.y;
+    const wet = waterMotion(p, b.linvel().y, dt);
+    const speed = (isRunning ? 7 : 4) * wet.speedScale;
+    let vy = paused ? 0 : wet.verticalSpeed;
     if (!paused && (keys.has('Space') || touchInput.jump) && grounded && !jumpLatch.current) {
       vy = 6.8;
       jumpLatch.current = true;

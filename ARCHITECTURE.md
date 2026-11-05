@@ -38,3 +38,7 @@ All current meshes, materials, icons, and sounds are locally generated or suppli
 ## Touch input
 
 `src/game/touch.ts` holds transient analog movement, jump/sprint/build mode, and camera gesture state. `TouchControls` owns pointer capture and lifecycle cleanup. The physics controller consumes analog input through the same camera-relative movement path as WASD. Touch world actions occur on release, while drags rotate the camera and suppress navigation/building taps. HUD collapse preferences live separately in localStorage and do not change saved adventures.
+
+## River simulation and crossing
+
+`src/game/river.ts` defines shared river bounds, mean water level, bed elevation, arch height and shallow-water movement response. Terrain tiles split at river boundaries and render the depressed bed; compound colliders and bank ramps match it. `RiverWater` renders local shader waves and shimmer plus player ripples. `ArchedBridge` creates tilted planks and railings with matching colliders. `src/game/crafting.ts` plans bounded batch transactions and computes Max without assuming inventory capacity is monotonic after consuming ingredients.

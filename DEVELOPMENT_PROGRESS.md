@@ -49,3 +49,13 @@ Mobile release checks: production build/TypeScript pass; 40 logic tests and all 
 ## Moonflower discoverability fix
 
 The watering target is now a large white/lavender flower on a distinct bed at the dry riverbank east of the wooden bridge (45, -14), clear of the bridge rail. A persistent nameplate identifies it; the active watering mission adds a gold ring, arrow and beacon. Watering changes its appearance and interaction name to watered and removes the objective marker. Helping-hand directions name the bridge, riverbank, map destination and desktop/mobile companion menu. Save IDs and progression flags are unchanged. Validation: production build, 41 logic tests and two focused browser checks pass, including actual Aquabub watering, quest readiness and map reward routing. Before/after screenshots reviewed.
+
+## Batch crafting
+
+Added per-recipe quantity sliders, numeric batch counts, and Max controls with live total cost/output previews. Wooden-block batches produce two blocks each. Batches are bounded to 1–99 and processed as one atomic inventory transaction with one checkpoint; quest progress counts produced items. Max checks actual capacity after ingredient consumption, including cases where consuming a whole stack frees the output slot. Existing single-batch calls remain compatible. Build/TypeScript and all 49 logic tests pass; focused UI validation covers controls, costs, output and quest progress.
+
+## River, bridge and Aquabub
+
+Replaced the flat water boxes with a locally animated water shader, waves, shallow/deeper color, shoreline highlights and player ripples. Terrain now has a lowered riverbed and matching compound colliders, with sloping banks. Submersion applies movement drag and buoyant vertical damping; bridge travelers stay above the water response. The bridge has 24 individually sloped planks forming a 1.45-unit-high center arch, matching deck colliders, curved railings and posts. Wild Aquabub moved onto dry eastern riverbank ground at (46, -22), outside the bridge footprint. Ground resources and procedural tree trunks are kept out of the channel and crossing; stable item/species/node IDs preserve collected progress. This is a shallow-water gameplay model with animated surface effects. Batch crafting is included in the same release.
+
+Final combined validation: production build and TypeScript pass; 55 logic tests pass. Browser checks passed for crafting quantities/materials/quest progress, moonflower watering, arch support and uphill traversal, shallow-bed wading, and befriending Aquabub on the dry bank. Final screenshots show a clear plank crossing and no Aquabub under the bridge. Existing save IDs and schema remain compatible.

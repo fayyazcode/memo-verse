@@ -48,6 +48,9 @@ import {
 import { available, deliver, ready, useGame, type Panel } from '@/game/store';
 import { count, levelFromXp, maxCreatureHp, validShelter } from '@/game/rules';
 import { keys, motion, navigation } from '@/game/input';
+import { riverDepth } from '@/game/river';
+import { craftBatch, maxCraftBatches, type Recipe } from '@/game/crafting';
+import type { Save as GameSave } from '@/game/store';
 import { ambience } from '@/game/audio';
 import TouchControls from './TouchControls';
 import CreaturePortrait from './CreaturePortrait';
@@ -320,6 +323,7 @@ function Hud() {
     (target?.startsWith('lamp:') ? 'Crystal lamp' : null) ??
     (target?.startsWith('creature:') ? CREATURES[target.slice(9) as Species].name : null);
   const forest = s.position[0] > 22;
+  const wading = riverDepth({ x: s.position[0], y: s.position[1], z: s.position[2] }) > 0.12;
   return (
     <div className="hud">
       <header className="game-top">
@@ -606,6 +610,9 @@ function Hud() {
           ))}
         </nav>
       </footer>
+      {wading && (
+        <div className="water-hint">Wading · movement is slower · jump to climb the bank</div>
+      )}
       <div className="region-caption">
         <span /> {forest ? 'THE FOREST HAS A FEW SECRETS.' : 'TAKE YOUR TIME. YOU’RE HOME.'}
       </div>
@@ -983,48 +990,102 @@ function Creatures() {
     </>
   );
 }
+function RecipeRow({ recipe: r, save: s }: { recipe: Recipe; save: GameSave }) {
+  const [requested, setRequested] = useState(1);
+  const unlocked = s.quests[r.unlock]?.status === 'complete';
+  const max = maxCraftBatches(s.inventory, r),
+    batches = Math.min(requested, Math.max(1, max));
+  const supported = !r.companion || !!s.creatures[r.companion]?.hp;
+  const possible = !!craftBatch(s.inventory, r, batches);
+  const select = (value: number) =>
+    setRequested(Math.max(1, Math.min(Math.max(1, max), Math.trunc(value) || 1)));
+  return (
+    <article className={`recipe batch-recipe ${unlocked ? '' : 'locked'}`}>
+      <div className="recipe-icon">{ITEMS[r.id].icon}</div>
+      <div className="batch-recipe-info">
+        <h3>
+          {ITEMS[r.id].name} <small>×{r.output * batches}</small>
+        </h3>
+        <p>
+          {Object.entries(r.ingredients)
+            .map(
+              ([id, n]) =>
+                `${n! * batches} ${ITEMS[id as ItemId].name} (have ${count(s.inventory, id as ItemId)})`
+            )
+            .join(' + ')}
+        </p>
+        <small>
+          {!unlocked
+            ? `Unlock: ${QUESTS.find((q) => q.id === r.unlock)?.name}`
+            : r.companion
+              ? 'Requires healthy Emberfox assistance'
+              : 'Crafted at Bruno’s workshop'}
+        </small>
+        <div className="batch-controls">
+          <label htmlFor={`batch-${r.id}`}>
+            Batches{' '}
+            <small>
+              ({r.output} item{r.output === 1 ? '' : 's'} each)
+            </small>
+          </label>
+          <input
+            id={`batch-${r.id}`}
+            aria-label={`${ITEMS[r.id].name} batches`}
+            type="range"
+            min={1}
+            max={Math.max(1, max)}
+            step={1}
+            value={batches}
+            disabled={!unlocked || !max}
+            onChange={(e) => select(Number(e.target.value))}
+          />
+          <input
+            aria-label={`${ITEMS[r.id].name} batch count`}
+            type="number"
+            min={1}
+            max={Math.max(1, max)}
+            step={1}
+            value={batches}
+            disabled={!unlocked || !max}
+            onChange={(e) => select(Number(e.target.value))}
+          />
+          <button
+            className="secondary"
+            disabled={!unlocked || !max}
+            onClick={() => setRequested(max)}
+          >
+            Max
+          </button>
+        </div>
+        {unlocked && !possible && (
+          <small className="craft-capacity-note">
+            Not enough materials or inventory space for this batch.
+          </small>
+        )}
+      </div>
+      <button
+        className="primary"
+        disabled={!unlocked || !possible || !supported}
+        onClick={() => useGame.getState().craft(r.id, batches)}
+      >
+        Craft {r.output * batches}
+        <Plus size={13} />
+      </button>
+    </article>
+  );
+}
 function Crafting() {
   const s = useGame((s) => s.save);
   return (
     <>
-      <p className="panel-intro">A little patience. A few good materials. Something made by you.</p>
+      <p className="panel-intro">
+        Choose how many batches to craft. Materials and output update together. Each batch makes the
+        shown number of items; Max respects your materials and bag space.
+      </p>
       <div className="recipe-list">
-        {RECIPES.map((r) => {
-          const unlocked = s.quests[r.unlock]?.status === 'complete';
-          const enough = Object.entries(r.ingredients).every(
-            ([id, n]) => count(s.inventory, id as ItemId) >= n!
-          );
-          return (
-            <article className={`recipe ${unlocked ? '' : 'locked'}`} key={r.id}>
-              <div className="recipe-icon">{ITEMS[r.id].icon}</div>
-              <div>
-                <h3>
-                  {ITEMS[r.id].name} <small>×{r.output}</small>
-                </h3>
-                <p>
-                  {Object.entries(r.ingredients)
-                    .map(([id, n]) => `${n} ${ITEMS[id as ItemId].name}`)
-                    .join(' + ')}
-                </p>
-                <small>
-                  {!unlocked
-                    ? `Unlock: ${QUESTS.find((q) => q.id === r.unlock)?.name}`
-                    : r.companion
-                      ? 'Requires healthy Emberfox assistance'
-                      : 'Crafted at Bruno’s workshop'}
-                </small>
-              </div>
-              <button
-                className="primary"
-                disabled={!unlocked || !enough}
-                onClick={() => useGame.getState().craft(r.id)}
-              >
-                Craft
-                <Plus size={13} />
-              </button>
-            </article>
-          );
-        })}
+        {RECIPES.map((r) => (
+          <RecipeRow key={r.id} recipe={r} save={s} />
+        ))}
       </div>
     </>
   );
