@@ -49,6 +49,9 @@ import { available, deliver, ready, useGame, type Panel } from '@/game/store';
 import { count, levelFromXp, maxCreatureHp, validShelter } from '@/game/rules';
 import { keys, motion, navigation } from '@/game/input';
 import { ambience } from '@/game/audio';
+import CreaturePortrait from './CreaturePortrait';
+import { missionGuidance } from '@/game/guidance';
+const CreaturePreview = dynamic(() => import('./CreaturePreview'), { ssr: false });
 const World = dynamic(() => import('./World'), {
   ssr: false,
   loading: () => (
@@ -93,7 +96,19 @@ function IconButton({
 }
 function MiniMap({ large = false }: { large?: boolean }) {
   const position = useGame((s) => s.save.position),
-    discoveries = useGame((s) => s.save.discoveries);
+    discoveries = useGame((s) => s.save.discoveries),
+    save = useGame((s) => s.save);
+  const hints = missionGuidance(save);
+  const [selected, setSelected] = useState<string | null>(null);
+  const grouped = hints.reduce<(typeof hints)[]>((groups, hint) => {
+    const group = groups.find(
+      (g) => g[0].position[0] === hint.position[0] && g[0].position[2] === hint.position[2]
+    );
+    if (group) group.push(hint);
+    else groups.push([hint]);
+    return groups;
+  }, []);
+  const selectedHint = hints.find((h) => h.id === selected);
   const plot = (x: number, z: number) => ({
     left: `${((x + 34) / 144) * 100}%`,
     top: `${((z + 37) / 102) * 100}%`,
@@ -127,6 +142,41 @@ function MiniMap({ large = false }: { large?: boolean }) {
             {discoveries.includes(o.id) ? '✧' : '?'}
           </span>
         ))}
+      {grouped.map((group, i) => {
+        const hint = group[0];
+        return large ? (
+          <button
+            key={hint.id}
+            className="mission-marker"
+            style={plot(hint.position[0], hint.position[2])}
+            aria-label={`Mission destination: ${group.map((h) => h.label).join(', ')}`}
+            title={group.map((h) => `${h.mission}: ${h.label}`).join(' · ')}
+            onClick={() => setSelected(hint.id)}
+          >
+            {i + 1}
+          </button>
+        ) : (
+          <span
+            key={hint.id}
+            className="mission-marker"
+            style={plot(hint.position[0], hint.position[2])}
+            title={group.map((h) => h.label).join(' · ')}
+          >
+            {i + 1}
+          </span>
+        );
+      })}
+      {large && selectedHint && (
+        <div className="map-mission-info" role="status">
+          <b>
+            {selectedHint.mission} · {selectedHint.label}
+          </b>
+          <p>{selectedHint.help}</p>
+          <button onClick={() => setSelected(null)} aria-label="Close destination hint">
+            ×
+          </button>
+        </div>
+      )}
       <span className="map-player" style={plot(position[0], position[2])}>
         <i />
       </span>
@@ -298,7 +348,12 @@ function Hud() {
             </div>
           </div>
         </div>
-        <div className="quest-card">
+        <div
+          className="quest-card"
+          tabIndex={0}
+          aria-label="Active adventure helping hand"
+          aria-describedby="adventure-help"
+        >
           <div className="section-kicker">
             <Flag size={13} /> YOUR NEXT LITTLE ADVENTURE
             <button onClick={() => open('journal')} title="Open journal">
@@ -349,6 +404,23 @@ function Hud() {
                 Open your journal <ChevronRight size={13} />
               </button>
             </>
+          )}
+          {activeQuest && (
+            <div id="adventure-help" className="adventure-help" role="tooltip">
+              <span className="eyebrow">A HELPING HAND</span>
+              <h3>{activeQuest.name}</h3>
+              <ol>
+                {missionGuidance(s, activeQuest.id).map((h) => (
+                  <li key={h.id}>
+                    <strong>{h.label}</strong>
+                    <p>{h.help}</p>
+                  </li>
+                ))}
+              </ol>
+              <button className="secondary" onClick={() => open('map')}>
+                Show destinations on map <MapPin size={13} />
+              </button>
+            </div>
           )}
           <div className="quest-footer">
             <BookOpen size={12} /> JOURNAL <kbd>J</kbd>
@@ -459,7 +531,11 @@ function Hud() {
               </button>
             ))}
           </div>
-          <span className="hotbar-caption">A LITTLE OF EVERYTHING YOU NEED</span>
+          <span className="hotbar-caption">
+            {s.hotbar[selected] && count(s.inventory, s.hotbar[selected]!) > 0
+              ? `Holding: ${ITEMS[s.hotbar[selected]!].name}`
+              : 'Empty hand · select an item to equip'}
+          </span>
         </div>
         <nav className="menu-dock">
           {(
@@ -702,6 +778,7 @@ function Journal() {
   );
 }
 function Creatures() {
+  const [details, setDetails] = useState<Species | null>(null);
   const s = useGame((s) => s.save),
     action = useGame.getState();
   return (
@@ -716,16 +793,107 @@ function Creatures() {
           return (
             <article className={`creature-card ${owned ? '' : 'undiscovered'}`} key={id}>
               <div className="creature-art" style={{ background: c.color + '44' }}>
-                <PawPrint size={58} color={c.color} />
+                <CreaturePortrait species={id} />
                 <span className="element-badge">{c.type}</span>
                 {s.active === id && <span className="active-tag">BY YOUR SIDE</span>}
               </div>
               <h3>{c.name}</h3>
+              <button
+                className="creature-detail-button"
+                aria-expanded={details === id}
+                onClick={() => setDetails(details === id ? null : id)}
+              >
+                {' '}
+                {details === id ? 'Close details' : 'View creature card'} <ArrowUpRight size={13} />
+              </button>
               <p>{c.description}</p>
               <div className="creature-ability">
                 <Sparkles size={13} />
                 {c.ability}
               </div>
+              {details === id && (
+                <section
+                  className="collectible-card"
+                  aria-label={`${c.name} creature details`}
+                  style={{ '--creature-color': c.color } as React.CSSProperties}
+                >
+                  <header>
+                    <span>FOREST COMPANIONS · #{Object.keys(CREATURES).indexOf(id) + 1}</span>
+                    <strong>
+                      {owned ? `${owned.hp} / ${maxCreatureHp(owned)} HP` : 'NOT BEFRIENDED'}
+                    </strong>
+                  </header>
+                  <div className="collectible-title">
+                    <h4>{c.name}</h4>
+                    <span>{c.type}</span>
+                  </div>
+                  <div
+                    className="pet-preview"
+                    role="img"
+                    aria-label={`Rotating 3D model of ${c.name}`}
+                  >
+                    <CreaturePreview species={id} />
+                  </div>
+                  <p className="creature-flavour">{c.description}</p>
+                  <dl>
+                    <div>
+                      <dt>Level</dt>
+                      <dd>{level?.level ?? 'Wild · 1'}</dd>
+                    </div>
+                    <div>
+                      <dt>Friendship</dt>
+                      <dd>{owned ? `${owned.friendship} / 100` : 'Not yet bonded'}</dd>
+                    </div>
+                    <div>
+                      <dt>Next level</dt>
+                      <dd>
+                        {level
+                          ? level.next
+                            ? `${level.xp} / ${level.next} XP`
+                            : 'MAX'
+                          : 'Befriend to train'}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="card-move">
+                    <b>Basic attack</b>
+                    <span>10 damage · 1.5s cooldown</span>
+                  </div>
+                  <div className="card-move">
+                    <b>{c.type} burst</b>
+                    <span>18 base damage · 6s cooldown</span>
+                  </div>
+                  <div className="card-utility">
+                    <b>Exploration ability</b>
+                    <span>{c.ability}</span>
+                  </div>
+                  <p>
+                    <b>Befriending:</b> {ITEMS[c.food].name}. Habitat:{' '}
+                    {id === 'emberfox'
+                      ? 'Warm forest clearing'
+                      : id === 'aquabub'
+                        ? 'Riverbank'
+                        : id === 'mosshell'
+                          ? 'Rocky forest area'
+                          : 'Crystal grove'}
+                    .
+                  </p>
+                  <footer>
+                    Strong against{' '}
+                    {
+                      (
+                        {
+                          Fire: 'Earth',
+                          Water: 'Fire',
+                          Earth: 'Electric',
+                          Electric: 'Water',
+                        } as const
+                      )[c.type]
+                    }{' '}
+                    ×1.25 · Original MomoVerse species
+                  </footer>
+                </section>
+              )}
               {owned ? (
                 <>
                   <div className="creature-stats">
@@ -1053,6 +1221,9 @@ function PanelView() {
               </p>
               <MiniMap large />
               <div className="map-legend">
+                <span>
+                  <Flag size={13} /> Gold markers: active missions
+                </span>
                 <span>
                   <i className="legend-player" />
                   You are here

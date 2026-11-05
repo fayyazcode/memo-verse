@@ -10,7 +10,16 @@ import {
   useRapier,
 } from '@react-three/rapier';
 import * as THREE from 'three';
-import { CREATURES, LANDMARKS, NPCS, OBJECTS, PLOT, type Species, type Vec3 } from '@/game/data';
+import {
+  CREATURES,
+  ITEMS,
+  LANDMARKS,
+  NPCS,
+  OBJECTS,
+  PLOT,
+  type Species,
+  type Vec3,
+} from '@/game/data';
 import { useGame } from '@/game/store';
 import { validPlacement, type Block } from '@/game/rules';
 import { keys, motion, playerRuntime, navigation } from '@/game/input';
@@ -381,6 +390,16 @@ function Scenery() {
   );
 }
 function ObjectMesh({ id }: { id: string }) {
+  const shake = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (!shake.current) return;
+    const harvest = playerRuntime.harvest;
+    const elapsed = harvest ? (Date.now() - harvest.started) / 1000 : 2;
+    shake.current.rotation.z =
+      harvest?.id === id && elapsed < 0.7
+        ? Math.sin(elapsed * 36) * 0.045 * (1 - elapsed / 0.7)
+        : 0;
+  });
   const obj = OBJECTS.find((o) => o.id === id)!;
   const used = useGame((s) => s.save.nodes[id] ?? 0),
     time = useGame((s) => Math.floor(s.save.playTime / 10)),
@@ -397,7 +416,7 @@ function ObjectMesh({ id }: { id: string }) {
   const depleted = used > time * 10;
   if (obj.kind === 'landmark') return null;
   return (
-    <group position={obj.pos} userData={{ interactionId: obj.id }}>
+    <group ref={shake} position={obj.pos} userData={{ interactionId: obj.id }}>
       {obj.item === 'wood' ? (
         <Tree position={[0, 0, 0]} scale={depleted ? 0.75 : 1} />
       ) : obj.item === 'berry' || obj.item === 'fruit' ? (
@@ -552,6 +571,13 @@ function Player() {
       if ((state.started && !previous.started) || Math.hypot(p[0] - old[0], p[2] - old[2]) > 15) {
         body.current?.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
         body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        const distance = state.settings.distance;
+        look.current.set(p[0], p[1] + 0.8, p[2]);
+        camPos.current.set(
+          p[0] + Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
+          p[1] + 0.8 + Math.sin(motion.pitch) * distance,
+          p[2] + Math.cos(motion.yaw) * Math.cos(motion.pitch) * distance
+        );
       }
     });
   }, []);
@@ -601,6 +627,15 @@ function Player() {
       }
     } else stuckTime.current = 0;
     previousPosition.current.set(p.x, p.y, p.z);
+    const harvest = playerRuntime.harvest;
+    if (harvest && Date.now() - harvest.started < 700) {
+      dir.set(0, 0, 0);
+      if (visual.current)
+        visual.current.rotation.y = Math.atan2(
+          harvest.position[0] - p.x,
+          harvest.position[2] - p.z
+        );
+    }
     const isMoving = dir.lengthSq() > 0,
       isRunning = keys.has('ShiftLeft') || keys.has('ShiftRight');
     if (isMoving !== moving) setMoving(isMoving);
@@ -871,6 +906,46 @@ function MoveMarker() {
     </mesh>
   );
 }
+function HarvestEffects() {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const object = useMemo(() => new THREE.Object3D(), []);
+  useFrame(() => {
+    if (!mesh.current) return;
+    const harvest = playerRuntime.harvest;
+    const age = harvest ? (Date.now() - harvest.started) / 1000 : 10;
+    mesh.current.visible = !!harvest && age < 1.1;
+    if (!harvest || age >= 1.1) return;
+    const material = mesh.current.material as THREE.MeshBasicMaterial;
+    material.color.set(ITEMS[harvest.item].color);
+    for (let i = 0; i < 10; i++) {
+      const angle = i * 2.399;
+      const t = Math.max(0, Math.min(1, (age - 0.15) / 0.95));
+      const start = new THREE.Vector3(
+        harvest.position[0] + Math.cos(angle) * 0.4,
+        0.7 + (i % 3) * 0.2,
+        harvest.position[2] + Math.sin(angle) * 0.4
+      );
+      const end = new THREE.Vector3(
+        playerRuntime.position[0],
+        playerRuntime.position[1] + 0.3,
+        playerRuntime.position[2]
+      );
+      object.position.copy(start).lerp(end, t);
+      object.position.y += Math.sin(t * Math.PI) * 0.65;
+      object.scale.setScalar(0.07 * (1 - t * 0.7));
+      object.rotation.set(age * 5 + i, age * 3, 0);
+      object.updateMatrix();
+      mesh.current.setMatrixAt(i, object.matrix);
+    }
+    mesh.current.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={mesh} args={[undefined, undefined, 10]} visible={false}>
+      <boxGeometry />
+      <meshBasicMaterial />
+    </instancedMesh>
+  );
+}
 function Scene() {
   return (
     <>
@@ -913,6 +988,7 @@ function Scene() {
             )}
           </group>
           <MoveMarker />
+          <HarvestEffects />
           <Companion />
           <Player />
         </Physics>
@@ -922,8 +998,10 @@ function Scene() {
 }
 export default function World() {
   const quality = useGame((s) => s.settings.quality);
+  const menuOpen = useGame((s) => !!s.panel || !!s.dialogue);
   return (
     <Canvas
+      frameloop={menuOpen ? 'demand' : 'always'}
       shadows={quality !== 'low'}
       dpr={quality === 'low' ? 1 : [1, 1.5]}
       camera={{ position: [0, 6, 14], fov: 48, near: 0.1, far: 180 }}

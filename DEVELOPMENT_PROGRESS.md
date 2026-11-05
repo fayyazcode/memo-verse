@@ -29,3 +29,13 @@ Run the checks in TESTING.md. After the guest build passes, prioritize a full br
 Raised the default follow angle and increased default distance from 9 to 13. Existing saves and custom zoom settings remain supported; the previous default zoom upgrades automatically. Ground clicks move the player; object clicks approach and interact once in range. WASD overrides navigation. Building mode retains placement/removal clicks. Direct movement respects physics and stops on a blocked route; automatic pathfinding around obstacles is not implemented.
 
 Validation for the camera/mouse update: production build, TypeScript, 31 logic tests, and all five Chromium browser tests passed.
+
+## Mission guidance, creature cards, and harvesting update
+
+Active quest objectives now resolve to destinations on the minimap and full map. Full-map markers reveal contextual instructions; hovering or keyboard-focusing the adventure tracker reveals a helping-hand guide. Destinations update with objective completion, node availability, and reward readiness.
+
+The four original species have more distinct 3D features and illustrated collection portraits. View creature card opens a collectible-style reference card with a rotating version of the in-world model, live owned HP/level/XP/friendship, befriending food/habitat, attack cooldowns, utility, and elemental advantage. A portrait remains visible while the 3D scene prepares. Background-world rendering becomes demand-driven while a menu is open.
+
+Owned hotbar items appear in the character’s hand: pickaxe, treats, food, materials, and construction items. Mining uses a swinging tool/punch pose; harvesting plants uses a bent reaching pose. The character faces the target and briefly stops moving during the action. Nodes shake on impact and resource fragments travel toward the player. Reward eligibility and single-yield node rules remain unchanged. An owned pickaxe is automatically used visually during mining, then the selected item returns to the hand.
+
+Latest combined validation: frozen dependencies unchanged; production build and TypeScript pass; all 37 logic tests and all seven production-browser tests pass. The pickaxe, cookie and live 3D creature-card screenshots were visually reviewed. Saved-game camera alignment now happens immediately to keep mouse targets stable at startup.

@@ -7,6 +7,13 @@ export const playerRuntime = {
   grounded: true,
   action: 'idle',
   actionUntil: 0,
+  actionStarted: 0,
+  harvest: null as null | {
+    id: string;
+    item: import('./data').ItemId;
+    position: [number, number, number];
+    started: number;
+  },
 };
 
 // Transient intent, deliberately excluded from saved adventures.

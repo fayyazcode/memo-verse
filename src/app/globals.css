@@ -1891,3 +1891,268 @@ kbd {
   font-size: 9px;
   white-space: nowrap;
 }
+/* Mission guidance stays usable with a mouse or keyboard focus. */
+.quest-card {
+  position: relative;
+  overflow: visible;
+  pointer-events: auto;
+}
+.quest-card:focus-visible {
+  outline: 2px solid #b99b57;
+  outline-offset: 4px;
+}
+.adventure-help {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 330px;
+  max-height: 65vh;
+  overflow: auto;
+  background: #faf8ee;
+  border: 1px solid #d8dfc5;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 12px 45px #25391b26;
+  z-index: 12;
+  pointer-events: auto;
+}
+.quest-card:hover .adventure-help,
+.quest-card:focus-within .adventure-help {
+  display: block;
+}
+.adventure-help:before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 14px;
+  height: 100%;
+}
+.adventure-help h3 {
+  margin: 10px 0 !important;
+}
+.adventure-help ol {
+  margin: 15px 0;
+  padding-left: 18px;
+}
+.adventure-help li {
+  font-size: 11px;
+  line-height: 1.6;
+  margin-bottom: 13px;
+  color: #6a7d58;
+}
+.adventure-help li p {
+  font-size: 10px;
+  color: #879276;
+  margin-top: 4px;
+}
+.adventure-help .secondary {
+  font-size: 10px;
+}
+.mission-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 17px;
+  height: 17px;
+  border-radius: 50% 50% 50% 0;
+  rotate: 0deg;
+  background: #e7bd5c;
+  border: 2px solid #fff5d6;
+  box-shadow: 0 2px 5px #4a582f35;
+  color: #4e5c32;
+  font-size: 9px;
+  font-weight: 700;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.large .mission-marker {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mission-marker:hover,
+.mission-marker:focus-visible {
+  background: #f6d785;
+  z-index: 5;
+}
+.map-player {
+  z-index: 4;
+  pointer-events: none;
+}
+.map-mission-info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 6;
+  background: #faf7e9f5;
+  border: 1px solid #d5ddc0;
+  border-radius: 10px;
+  padding: 14px 32px 14px 14px;
+  text-align: left;
+  box-shadow: 0 5px 20px #35432620;
+}
+.map-mission-info b {
+  font-size: 11px;
+}
+.map-mission-info p {
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 5px;
+  color: #7c8b6b;
+}
+.map-mission-info button {
+  position: absolute;
+  right: 7px;
+  top: 5px;
+  font-size: 20px;
+}
+.creature-detail-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 17px 12px;
+  padding: 0;
+  color: #6d8456;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 10px;
+}
+.collectible-card {
+  --creature-color: #93ad74;
+  margin: 15px 12px;
+  padding: 12px;
+  border: 5px solid var(--creature-color);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #fffbed, #e8ecd8);
+  box-shadow: 0 7px 18px #4b62361a;
+}
+.collectible-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 6px;
+  letter-spacing: 0.5px;
+  color: #7d8868;
+}
+.collectible-card > header strong {
+  font-size: 7px;
+}
+.collectible-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 9px 0;
+}
+.collectible-title h4 {
+  font-size: 19px;
+  margin: 0;
+  font-family: Georgia, serif;
+}
+.collectible-title > span {
+  font-size: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--creature-color);
+  color: #334538;
+}
+.pet-preview {
+  height: 190px;
+  border: 1px solid #ffffffc0;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 50% 70%, #fff5d9 0%, var(--creature-color) 160%);
+  overflow: hidden;
+}
+.collectible-card p {
+  font-size: 9px;
+  line-height: 1.7;
+  margin: 10px 0;
+  min-height: 0;
+}
+.collectible-card .creature-flavour {
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: #667953;
+}
+.collectible-card dl {
+  margin: 12px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.collectible-card dl > div {
+  padding: 7px;
+  background: #ffffff60;
+  border-radius: 6px;
+}
+.collectible-card dt {
+  font-size: 7px;
+  color: #8c967a;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+.collectible-card dd {
+  font-size: 9px;
+  margin: 4px 0 0;
+}
+.card-move,
+.card-utility {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid #cbd3b3;
+  padding: 10px 0;
+}
+.card-move b,
+.card-utility b {
+  font-size: 10px;
+}
+.card-move span,
+.card-utility span {
+  font-size: 8px;
+  color: #81916c;
+}
+.collectible-card footer {
+  font-size: 7px;
+  line-height: 1.7;
+  border-top: 1px solid #d0d6be;
+  padding-top: 9px;
+  color: #899376;
+}
+@media (max-width: 900px) {
+  .adventure-help {
+    left: 0;
+    top: calc(100% + 8px);
+    width: 300px;
+    max-height: 40vh;
+  }
+  .adventure-help:before {
+    left: 0;
+    right: 0;
+    top: -12px;
+    width: 100%;
+    height: 12px;
+  }
+}
+.creature-3d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.preview-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  pointer-events: none;
+}
+.preview-placeholder small {
+  font-size: 8px;
+  color: #758963;
+}

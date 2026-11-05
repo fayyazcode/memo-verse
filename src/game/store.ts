@@ -555,10 +555,19 @@ export const useGame = create<GameStore>((set, get) => ({
         obj.amount
       ),
     });
-    playerRuntime.action = 'gather';
-    playerRuntime.actionUntil = Date.now() + 700;
+    playerRuntime.actionStarted = Date.now();
+    playerRuntime.action = ['wood', 'stone', 'ore', 'crystal', 'fragment'].includes(obj.item)
+      ? 'mine'
+      : 'pick';
+    playerRuntime.actionUntil = Date.now() + 1100;
+    playerRuntime.harvest = {
+      id: obj.id,
+      item: obj.item,
+      position: [...obj.pos],
+      started: Date.now(),
+    };
     get().notify(`+${obj.amount} ${ITEMS[obj.item].name}`);
-    sound('gather', get().settings.effects);
+    sound(playerRuntime.action === 'mine' ? 'hit' : 'gather', get().settings.effects);
     void get().persist();
   },
   craft: (id) => {

@@ -74,3 +74,21 @@ describe('economy', () => {
     expect(count(useGame.getState().save.inventory, 'pickaxe')).toBe(0);
   });
 });
+
+describe('harvesting animation feedback', () => {
+  it('uses a picking action for fiber and an impact action for stone', async () => {
+    const { playerRuntime } = await import('../src/game/input');
+    const s = freshSave();
+    s.quests.q01 = { status: 'complete', progress: {} };
+    useGame.setState({ save: s });
+    useGame.getState().gather('fiber0');
+    expect(playerRuntime.action).toBe('pick');
+    expect(playerRuntime.harvest?.item).toBe('fiber');
+    useGame.getState().gather('rock0');
+    expect(playerRuntime.action).toBe('mine');
+    expect(playerRuntime.harvest?.id).toBe('rock0');
+    const started = playerRuntime.harvest?.started;
+    useGame.getState().gather('rock0');
+    expect(playerRuntime.harvest?.started).toBe(started);
+  });
+});

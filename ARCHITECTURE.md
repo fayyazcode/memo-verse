@@ -30,3 +30,7 @@ Version 1 is the initial format. Unknown versions are rejected and preserved; hi
 ## Asset strategy
 
 All current meshes, materials, icons, and sounds are locally generated or supplied by installed packages. No external font, model, audio, or texture service is required at runtime. A future GLB model can replace Character/CreatureModel without changing game rules. The two referenced character images remain unavailable.
+
+## Guidance and visual equipment
+
+`src/game/guidance.ts` projects active mission state into objective hints and world destinations without mutating progression. `CreaturePortrait` supplies original species illustrations; the lazy `CreaturePreview` renders the same improved `CreatureModel` used in-world and reports first-frame readiness. `HeldItem` renders owned hotbar selections at the character’s hand. Mining/picking intent and pickup effects are transient `playerRuntime` data, while inventory transactions and node eligibility remain in the game store. Menus use demand-driven world rendering; the separate pet preview continues animating.

@@ -38,3 +38,11 @@ Guest progress autosaves to IndexedDB after transactions and every 15 seconds. S
 This is an early, playable **guest-mode implementation**, not the completed production MVP. Cloud accounts, PostgreSQL/Drizzle persistence, import conflict UI, richer terrain, full animation polish, and comprehensive cross-browser/performance qualification remain unfinished. Character reference images were not attached; the current character is an original procedural approximation based on the written description.
 
 See [DEVELOPMENT_PROGRESS.md](DEVELOPMENT_PROGRESS.md), [GAME_DESIGN.md](GAME_DESIGN.md), and [ARCHITECTURE.md](ARCHITECTURE.md). The approved source specification is preserved in [docs/MOMOVERSE_SPEC.md](docs/MOMOVERSE_SPEC.md).
+
+## Player help and equipment
+
+Hover or keyboard-focus the active adventure card for step-by-step help. Gold numbered markers on the minimap and full map show unfinished mission destinations; select a marker on the full map for instructions. Completed objectives disappear and a ready-to-claim mission points back to its NPC.
+
+In the creature collection (C), choose **View creature card** for an original collectible-style reference with a rotating 3D model, current stats, attacks, exploration utility, and befriending information.
+
+Select an owned item on the hotbar (1–6) to hold its 3D model. Mining and gathering play different actions with target impacts and pickup particles. Unowned ghost slots leave the hand empty.
