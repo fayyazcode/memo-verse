@@ -90,3 +90,39 @@ describe('Phase 1 compatible persistence', () => {
     expect(await db.get('saves', 'adventure')).toEqual(bad);
   });
 });
+
+describe('stuck forest-secret save repair', () => {
+  it('repairs an active legacy mission on load and checkpoints without duplicating treasure', async () => {
+    const old = freshSave();
+    old.flags = ['chest'];
+    old.coins = 110;
+    old.inventory = [{ item: 'crystal', qty: 2 }];
+    old.revision = 8;
+    old.quests.q10 = { status: 'active', progress: { oak: 1, river: 1, crystal: 1 } };
+    await saveData(old);
+    const snapshot = structuredClone(old);
+    const loaded = (await loadData())!;
+    expect(loaded.quests.q10.progress).toEqual({ oak: 1, river: 1, crystal: 1, chest: 1 });
+    expect(loaded.coins).toBe(110);
+    expect(loaded.inventory).toEqual(old.inventory);
+    expect(old).toEqual(snapshot);
+    const db = await openDB('momoverse', 1);
+    expect(await db.get('saves', 'adventure')).toEqual(old);
+    await useGame.getState().start(true);
+    const repaired = (await loadData())!;
+    expect(repaired.quests.q10.progress.chest).toBe(1);
+    expect(repaired.revision).toBe(9);
+    expect(repaired.coins).toBe(110);
+    expect(repaired.inventory).toEqual(old.inventory);
+  });
+  it('does not credit an unopened chest or change completed missions', async () => {
+    const s = freshSave();
+    s.quests.q10 = { status: 'active', progress: {} };
+    await saveData(s);
+    expect((await loadData())!.quests.q10.progress.chest).toBeUndefined();
+    s.flags = ['chest'];
+    s.quests.q10.status = 'complete';
+    await saveData(s);
+    expect(await loadData()).toEqual(s);
+  });
+});

@@ -11,3 +11,7 @@ Explicit squad fields are validated for ownership, duplicate membership, limits,
 No cloud accounts or cloud revision service exist. Conflict tests cover local IndexedDB sessions/tabs. Browser settings (including bindings and camera/outfits) remain separate localStorage preferences.
 
 Automated coverage includes representative old saves, unchanged legacy progress, new serialization with shields/cooldowns/charge, invalid stored squads left untouched, rapid checkpoints, stale revisions, and browser save/reload after real squad actions.
+
+## Early forest treasure repair
+
+Version-1 saves may already contain the durable `chest` flag while the active Hidden Forest Secrets mission lacks its chest objective. Validation now returns a reconciled copy with that objective credited. The original input/disk record is untouched during reads; normal start/checkpoint persistence saves the repaired progress through the existing revision queue. Accepting the mission after opening the chest also credits it, and interacting with an already-open chest can reconcile stale runtime progress. This never replays treasure coins/items, never claims the mission reward automatically, and leaves completed missions alone. Unopened chests and resource-gathering objectives are not backfilled.

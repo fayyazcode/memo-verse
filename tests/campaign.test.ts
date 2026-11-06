@@ -188,3 +188,39 @@ describe('complete campaign logic integration', () => {
     expect(game().save.coins).toBe(coins);
   });
 });
+
+describe('early forest treasure credit', () => {
+  it('counts a chest opened before accepting the mission without repeating its treasure', () => {
+    const s = freshSave();
+    s.quests.q03 = { status: 'complete', progress: {} };
+    s.position = [72, 1, 36];
+    useGame.setState({ save: s });
+    target('chest');
+    const treasure = structuredClone(game().save);
+    expect(treasure.coins).toBe(110);
+    expect(count(treasure.inventory, 'crystal')).toBe(2);
+    for (const id of ['ancientOak', 'riverBend', 'crystalClearing']) game().discover(id);
+    accept('q10');
+    expect(game().save.quests.q10.progress.chest).toBe(1);
+    expect(game().save.coins).toBe(treasure.coins);
+    expect(game().save.inventory).toEqual(treasure.inventory);
+    expect(ready(game().save, 'q10')).toBe(true);
+    game().claim('q10');
+    expect(game().save.coins).toBe(285);
+    const coins = game().save.coins;
+    target('chest');
+    game().claim('q10');
+    expect(game().save.coins).toBe(coins);
+    expect(count(game().save.inventory, 'crystal')).toBe(2);
+  });
+  it('can repair stale runtime progress by interacting with an already-opened chest', () => {
+    const s = freshSave();
+    s.flags = ['chest'];
+    s.quests.q10 = { status: 'active', progress: {} };
+    useGame.setState({ save: s });
+    target('chest');
+    expect(game().save.quests.q10.progress.chest).toBe(1);
+    expect(game().save.coins).toBe(50);
+    expect(game().save.inventory).toEqual([]);
+  });
+});

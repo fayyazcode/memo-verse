@@ -64,3 +64,9 @@ See SAVE_MIGRATION.md for the additive version-1 adapter. Phase 2 systems remain
 `GameMenu` routes existing panels and world controls from a focus-trapped side drawer. `SquadHud` exposes a compact mobile summary and conditional ability tray; `TouchControls` consumes the same transient `abilityTrayOpen` flag to avoid duplicate action layers. These changes do not add a second gameplay state or modify adventure persistence. Settings store `uiScale` and tracked mission selection separately from Save.
 
 `game/ui.ts` projects mission selection/progress (including actual shelter validity) and notification presentation. `Notifications` shows a single prioritized toast, combines repeated pickup amounts and bounds pending messages to four. Menu input suppression and dialogue pause continue through the existing panel/dialogue flags; render-time world simulation remains in the original components.
+
+## Native world labels and durable chest credit
+
+`WorldLabels.tsx` replaces Label canvas sprites with a managed DOM overlay anchored by Three groups. A bounded render-loop layout projects anchors, maintains fixed readable pixel sizes, resolves collisions around the player, and cleans up mounted label elements. The overlay is non-interactive and sits below HUD/dialogue layers.
+
+`reconcilePermanentProgress` projects the existing chest-opened flag into active quest progress during save validation, acceptance and repeated chest interaction. It reuses quest events without replaying treasure or mission rewards. Save version, storage key and revision checks are unchanged; migration details are in SAVE_MIGRATION.md.

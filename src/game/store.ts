@@ -119,6 +119,8 @@ export type Settings = {
   isometricSpan: number;
   uiScale: number;
   trackedQuest: string | null;
+  hudMinimized: boolean;
+  questMinimized: boolean;
   bindings: { squad: string; Q: string; E: string; R: string; previous: string; next: string };
 };
 export const defaultSettings: Settings = {
@@ -134,6 +136,8 @@ export const defaultSettings: Settings = {
   isometricSpan: 28,
   uiScale: 115,
   trackedQuest: null,
+  hudMinimized: false,
+  questMinimized: false,
   bindings: defaultBindings,
 };
 export function validateSave(value: unknown): Save {
@@ -231,7 +235,7 @@ export function validateSave(value: unknown): Save {
     throw Error('Invalid saved world.');
   if (s.squad !== undefined && !validSquad(s, s.squad))
     throw Error('Invalid saved squad. Your save has been preserved.');
-  return s;
+  return reconcilePermanentProgress(s);
 }
 async function database() {
   return openDB('momoverse', 1, {
@@ -261,6 +265,21 @@ function event(s: Save, type: string, target: string, amount = 1): Save {
     quests[def.id] = { ...q, progress };
   }
   return { ...s, quests };
+}
+// Reconcile one-time accomplishments without replaying loot or currency rewards.
+export function reconcilePermanentProgress(s: Save): Save {
+  if (!s.flags.includes('chest')) return s;
+  const missing = QUESTS.some(
+    (def) =>
+      s.quests[def.id]?.status === 'active' &&
+      def.objectives.some(
+        (o) =>
+          o.event === 'open' &&
+          o.target === 'chest' &&
+          (s.quests[def.id].progress[o.id] ?? 0) < o.count
+      )
+  );
+  return missing ? event(s, 'open', 'chest') : s;
 }
 export function ready(s: Save, id: string) {
   const q = QUESTS.find((q) => q.id === id);
@@ -394,6 +413,8 @@ export const useGame = create<GameStore>((set, get) => ({
         };
       } catch {}
       settings.bindings = { ...defaultSettings.bindings, ...settings.bindings };
+      settings.hudMinimized = settings.hudMinimized === true;
+      settings.questMinimized = settings.questMinimized === true;
       if (![90, 100, 115, 130].includes(settings.uiScale)) settings.uiScale = 115;
       if (settings.trackedQuest !== null && !QUESTS.some((q) => q.id === settings.trackedQuest))
         settings.trackedQuest = null;
@@ -451,6 +472,7 @@ export const useGame = create<GameStore>((set, get) => ({
     for (const f of s.flags)
       if (f.startsWith('ability:')) next = event(next, 'ability', f.slice(8));
     if (validShelter(s.blocks)) next = event(next, 'shelter', 'home');
+    next = reconcilePermanentProgress(next);
     set({ save: next });
     get().notify('Mission accepted — ' + QUESTS.find((q) => q.id === id)!.name);
     void get().persist();
@@ -550,7 +572,16 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     if (obj.id === 'chest') {
       if (s.flags.includes('chest')) {
-        get().notify('You already found this treasure.');
+        const repaired = reconcilePermanentProgress(s);
+        if (repaired !== s) {
+          set({ save: repaired });
+          void get().persist();
+        }
+        get().notify(
+          repaired !== s
+            ? 'Treasure already found — mission progress updated.'
+            : 'You already found this treasure.'
+        );
         return;
       }
       const inv = transact(s.inventory, {}, { crystal: 2 });

@@ -2,7 +2,7 @@
 import GameMenu from './GameMenu';
 import Notifications from './Notifications';
 import { trackedMission, missionProgress, uiScales } from '@/game/ui';
-import { Menu, Pause } from 'lucide-react';
+import { Menu, Pause, Minimize2, Maximize2, Minus } from 'lucide-react';
 import { SquadHud, SquadPanel, AbilityList } from './Squad';
 import { ROLES, squadOf } from '@/game/squad';
 import { BINDING_OPTIONS, bindingLabel, eventBinding } from '@/game/bindings';
@@ -371,6 +371,8 @@ function Hud() {
     saveStatus = useGame((s) => s.saveStatus);
   const level = levelFromXp(s.xp);
   const tracked = useGame((g) => g.settings.trackedQuest);
+  const hudMinimized = useGame((g) => g.settings.hudMinimized);
+  const questMinimized = useGame((g) => g.settings.questMinimized);
   const trayOpen = useGame((g) => g.abilityTrayOpen);
   const activeQuest = trackedMission(s, tracked);
   const progress = activeQuest ? missionProgress(s, activeQuest.id) : null;
@@ -391,6 +393,7 @@ function Hud() {
       data-mission-active={!!activeQuest}
       data-tasks-collapsed={tasksCollapsed}
       data-map-expanded={!mapCollapsed}
+      data-minimized={hudMinimized}
     >
       <header className="game-top">
         <button
@@ -411,6 +414,12 @@ function Hud() {
           <Sun size={14} /> Day {Math.floor(s.playTime / 720) + 1}
         </div>
         <div className="top-actions">
+          <IconButton
+            label={hudMinimized ? 'Show HUD' : 'Minimize HUD'}
+            onClick={() => useGame.getState().configure({ hudMinimized: !hudMinimized })}
+          >
+            {hudMinimized ? <Maximize2 size={20} /> : <Minimize2 size={20} />}
+          </IconButton>
           <span className="save-indicator">
             <span />
             {saveStatus}
@@ -457,12 +466,24 @@ function Hud() {
           </div>
         </div>
         {activeQuest && tasksCollapsed && (
-          <div className="tracked-mission">
+          <div className="tracked-mission" data-minimized={questMinimized}>
             <button aria-label="Open tracked mission" onClick={() => open('journal')}>
               <span className="quest-state">
-                {ready(s, activeQuest.id) ? '✓ REWARD READY' : '⚑ ACTIVE QUEST'}
+                {questMinimized
+                  ? ready(s, activeQuest.id)
+                    ? '✓ REWARD'
+                    : '⚑ QUEST'
+                  : ready(s, activeQuest.id)
+                    ? '✓ REWARD READY'
+                    : '⚑ ACTIVE QUEST'}
               </span>
-              <b>{activeQuest.name}</b>
+              <b>
+                {questMinimized
+                  ? progress!.next
+                    ? `${progress!.current}/${progress!.next.count}`
+                    : '✓'
+                  : activeQuest.name}
+              </b>
               <span>{hint?.label}</span>
               <small>
                 {progress!.next ? `${progress!.current}/${progress!.next.count}` : 'Ready to claim'}{' '}
@@ -478,6 +499,14 @@ function Hud() {
                 max={progress!.total}
                 value={progress!.done}
               />
+            </button>
+            <button
+              className="mission-minimize"
+              aria-label={questMinimized ? 'Expand mission tracker' : 'Minimize mission tracker'}
+              aria-expanded={!questMinimized}
+              onClick={() => useGame.getState().configure({ questMinimized: !questMinimized })}
+            >
+              {questMinimized ? <Plus size={20} /> : <Minus size={20} />}
             </button>
             {QUESTS.filter((q) => s.quests[q.id]?.status === 'active').length > 1 && (
               <button
@@ -1837,6 +1866,7 @@ export default function Game() {
           </div>
         )}
       </div>
+      <div id="world-label-layer" className="world-label-layer" aria-hidden="true" />
       <div className="vignette" />
       {started ? <Hud /> : <MainMenu />}
       <Dialog />

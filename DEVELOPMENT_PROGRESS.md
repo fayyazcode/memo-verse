@@ -85,3 +85,7 @@ Validation is recorded in TESTING.md, including the final browser results and me
 ## Mobile-first UI redesign
 
 Replaced the persistent bottom navigation and mobile utility row with a side drawer. Mobile companion information is collapsed and its ability tray opens beside the joystick. Added semantic action/ability states, a tracked mission summary with cycling and journal tracking, map marker filters, UI scaling, readable dialogue/menus, prioritized/coalesced notifications and focus trapping. Building controls replace combat actions while using the existing placement path. World geometry, gameplay transactions and adventure Save version 1 remain unchanged. No later Living World gameplay phase was started. See UI_REDESIGN.md and TESTING.md for actual behavior and validation.
+
+## HUD minimization, world-name clarity and early treasure recovery
+
+Added remembered whole-status-HUD and individual quest-tracker minimization. Replaced low-resolution/scaled world-label textures with native fixed-size text and bounded collision-aware placement. Reconciled previously opened treasure into the forest-secret mission, including already-stuck saves, without replaying loot. All 116 logic tests pass; seven focused browser checks pass, and both new recovery/minimization scenarios passed again after final label placement. Build and TypeScript pass. Existing saves need no new game.

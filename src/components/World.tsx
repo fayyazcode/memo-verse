@@ -30,6 +30,7 @@ import { keys, motion, playerRuntime, companionRuntime, navigation } from '@/gam
 import { touchInput, touchLook } from '@/game/touch';
 import AttackEffects from './AttackEffects';
 import { ArchedBridge, RiverWater } from './River';
+import { WorldLabel as Label, WorldLabelLayout } from './WorldLabels';
 import { SKINS, cameraProfile } from '@/game/appearance';
 import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
@@ -55,39 +56,6 @@ function Box({
       <boxGeometry args={size} />
       <meshStandardMaterial color={color} roughness={0.88} />
     </mesh>
-  );
-}
-function Label({
-  text,
-  position,
-  color = '#fff7df',
-  size = 0.43,
-}: {
-  text: string;
-  position: Vec3;
-  color?: string;
-  size?: number;
-}) {
-  const texture = useMemo(() => {
-    const c = document.createElement('canvas');
-    c.width = 512;
-    c.height = 96;
-    const ctx = c.getContext('2d')!;
-    ctx.font = '600 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(32,49,36,.8)';
-    ctx.beginPath();
-    ctx.roundRect(8, 12, 496, 72, 24);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.fillText(text, 256, 61);
-    return new THREE.CanvasTexture(c);
-  }, [text, color]);
-  useEffect(() => () => texture.dispose(), [texture]);
-  return (
-    <sprite position={position} scale={[size * 5.3, size, 1]}>
-      <spriteMaterial map={texture} transparent depthTest={false} />
-    </sprite>
   );
 }
 function Tree({
@@ -1329,6 +1297,7 @@ function Scene() {
           <Companions />
           <AbilityEffects />
           <Player />
+          <WorldLabelLayout />
         </Physics>
       </Suspense>
     </>

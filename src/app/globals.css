@@ -4149,3 +4149,95 @@ input:focus-visible {
 .tracked-mission small {
   font-size: 14px;
 }
+/* Optional compact HUD; keep navigation and essential touch controls available. */
+.hud[data-minimized='true'] .left-hud,
+.hud[data-minimized='true'] .right-hud,
+.hud[data-minimized='true'] .location-pill,
+.hud[data-minimized='true'] .save-indicator,
+.hud[data-minimized='true'] .region-caption,
+.hud[data-minimized='true'] .companion-summary {
+  display: none;
+}
+.hud[data-minimized='true'] .squad-hud:not([data-expanded='true']) {
+  display: none;
+}
+.tracked-mission {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+}
+.tracked-mission > button:first-child {
+  grid-column: 1;
+  min-width: 0;
+}
+.mission-minimize {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border-radius: 8px;
+  background: #31473e;
+}
+.tracked-mission .cycle-quest {
+  grid-column: 1 / -1;
+}
+.tracked-mission[data-minimized='true'] {
+  width: 148px;
+  min-height: 44px;
+}
+.tracked-mission[data-minimized='true'] > button:first-child {
+  padding: 6px 10px;
+  gap: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.tracked-mission[data-minimized='true'] .quest-state {
+  font-size: 12px;
+}
+.tracked-mission[data-minimized='true'] b {
+  font-size: 14px;
+}
+.tracked-mission[data-minimized='true'] > button:first-child > span:not(.quest-state),
+.tracked-mission[data-minimized='true'] small,
+.tracked-mission[data-minimized='true'] progress,
+.tracked-mission[data-minimized='true'] .cycle-quest {
+  display: none;
+}
+.world-label-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.world-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 16px));
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #172b27f5;
+  border: 1px solid #a8bdb0;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  text-shadow: none;
+  filter: none;
+  pointer-events: none;
+}
+.hud {
+  z-index: 3;
+}
+.world-label {
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: break-word;
+}
