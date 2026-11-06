@@ -58,7 +58,8 @@ export type Panel =
   | 'settings'
   | 'pause'
   | 'commands'
-  | 'squad';
+  | 'squad'
+  | 'menu';
 export type QuestState = { status: 'active' | 'complete'; progress: Record<string, number> };
 export type Save = {
   version: 1;
@@ -116,6 +117,8 @@ export type Settings = {
   skin: SkinId;
   perspective: 'classic' | 'adventure';
   isometricSpan: number;
+  uiScale: number;
+  trackedQuest: string | null;
   bindings: { squad: string; Q: string; E: string; R: string; previous: string; next: string };
 };
 export const defaultSettings: Settings = {
@@ -129,6 +132,8 @@ export const defaultSettings: Settings = {
   skin: 'meadow',
   perspective: 'classic',
   isometricSpan: 28,
+  uiScale: 115,
+  trackedQuest: null,
   bindings: defaultBindings,
 };
 export function validateSave(value: unknown): Save {
@@ -315,6 +320,7 @@ export type GameStore = {
   noticeId: number;
   saveStatus: string;
   build: boolean;
+  abilityTrayOpen: boolean;
   selected: number;
   command: 'follow' | 'stay';
   settings: Settings;
@@ -363,6 +369,7 @@ export const useGame = create<GameStore>((set, get) => ({
   noticeId: 0,
   saveStatus: 'Not saved yet',
   build: false,
+  abilityTrayOpen: false,
   selected: 0,
   command: 'follow',
   settings: defaultSettings,
@@ -387,6 +394,9 @@ export const useGame = create<GameStore>((set, get) => ({
         };
       } catch {}
       settings.bindings = { ...defaultSettings.bindings, ...settings.bindings };
+      if (![90, 100, 115, 130].includes(settings.uiScale)) settings.uiScale = 115;
+      if (settings.trackedQuest !== null && !QUESTS.some((q) => q.id === settings.trackedQuest))
+        settings.trackedQuest = null;
       if (!validBindings(settings.bindings)) settings.bindings = { ...defaultBindings };
       if (!['classic', 'adventure'].includes(settings.perspective))
         settings.perspective = 'classic';
@@ -421,7 +431,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ save: freshSave(), started: false, panel: null, dialogue: null, build: false }),
   setPosition: (position) => set({ save: { ...get().save, position } }),
   open: (panel) => {
-    set({ panel, dialogue: null, build: false });
+    set({ panel, dialogue: null, abilityTrayOpen: false });
     sound('click', get().settings.effects);
   },
   talk: (id) => {
@@ -1037,6 +1047,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   configure: (settings) => {
     const next = { ...get().settings, ...settings };
+    if (![90, 100, 115, 130].includes(next.uiScale)) return;
     if (!validBindings(next.bindings)) {
       get().notify('Choose unique squad keys. Movement and interaction keys are reserved.');
       return;

@@ -78,3 +78,7 @@ Settings → Camera perspective provides the same choice on desktop and mobile. 
 Equip up to three collected creatures, command one and let the others assist. The squad menu shows roles, ability unlocks, health, friendship and membership. The HUD shows cooldowns and ultimate charge, with clickable ability controls on mobile. Train against the three practice targets south of the village fountain; they grant creature XP but no coins or original mission rewards. Original utility interactions still use E/F or a click.
 
 The Living World reference is in [docs/LIVING_WORLD_SPEC.md](docs/LIVING_WORLD_SPEC.md). The [integration audit](EXPANSION_PLAN.md), [ability rules](GAME_DESIGN.md) and [save compatibility notes](SAVE_MIGRATION.md) describe this phase. Phase 2 and later expansion systems remain unimplemented.
+
+## Compact HUD and side menu
+
+Use **Menu** for backpack, journal, collection, squad, commands, camera selection, building, map and settings. Mobile pet details are collapsed by default: tap the pet summary or blue **Ability** button for cooldowns, spells and squad switching. Combat controls remain beside the joystick; building mode replaces them with placement controls. Settings → Interface size offers 90%, 100%, 115% and 130% text scaling. Track a mission in the journal or cycle active missions from the gold tracker. See [UI_REDESIGN.md](UI_REDESIGN.md).

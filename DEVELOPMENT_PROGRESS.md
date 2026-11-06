@@ -81,3 +81,7 @@ Implemented a three-creature equipped squad, one commanded member, tactical role
 Version-1 saves without squad state derive defaults from the existing active companion, retaining progression and existing cooldowns. Explicit new state is validated; invalid disk records are preserved. Combat uses the existing checkpoint revision queue and quest defeat projection. See SAVE_MIGRATION.md. Broader level-25 progression and every Phase 2+ system remain pending.
 
 Validation is recorded in TESTING.md, including the final browser results and measured software-renderer limitations. Phase 2 has not been started.
+
+## Mobile-first UI redesign
+
+Replaced the persistent bottom navigation and mobile utility row with a side drawer. Mobile companion information is collapsed and its ability tray opens beside the joystick. Added semantic action/ability states, a tracked mission summary with cycling and journal tracking, map marker filters, UI scaling, readable dialogue/menus, prioritized/coalesced notifications and focus trapping. Building controls replace combat actions while using the existing placement path. World geometry, gameplay transactions and adventure Save version 1 remain unchanged. No later Living World gameplay phase was started. See UI_REDESIGN.md and TESTING.md for actual behavior and validation.

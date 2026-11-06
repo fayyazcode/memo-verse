@@ -5,7 +5,8 @@ import { useGame } from '@/game/store';
 import { navigation, motion } from '@/game/input';
 import { joystickVector, resetTouch, touchInput, touchLook } from '@/game/touch';
 export default function TouchControls() {
-  const perspective = useGame((s) => s.settings.perspective);
+  const trayOpen = useGame((s) => s.abilityTrayOpen);
+  const target = useGame((s) => s.target);
   const busy = useGame((s) => !!s.panel || !!s.dialogue),
     build = useGame((s) => s.build);
   const stick = useRef<HTMLDivElement>(null),
@@ -92,7 +93,7 @@ export default function TouchControls() {
   if (busy) return null;
   const action = useGame.getState();
   return (
-    <div className="touch-controls" aria-label="Touch game controls">
+    <div className="touch-controls" aria-label="Touch game controls" data-building={build}>
       <div
         ref={stick}
         className="virtual-joystick"
@@ -117,20 +118,6 @@ export default function TouchControls() {
       </div>
       <div className="touch-utilities">
         <button
-          className="touch-view-switch"
-          aria-label="Switch camera perspective"
-          aria-pressed={perspective === 'adventure'}
-          onClick={() =>
-            useGame
-              .getState()
-              .configure({ perspective: perspective === 'classic' ? 'adventure' : 'classic' })
-          }
-        >
-          <Map size={17} />
-          {perspective === 'classic' ? 'Classic' : 'Isometric'}
-        </button>
-
-        <button
           aria-label="Toggle sprint"
           aria-pressed={running}
           onClick={() => {
@@ -141,77 +128,106 @@ export default function TouchControls() {
           <Footprints size={17} />
           Run
         </button>
-        <button aria-label="Companion commands" onClick={() => action.open('commands')}>
-          <PawPrint size={17} />
-          Pet
-        </button>
-        <button
-          aria-label="Toggle building mode"
-          aria-pressed={build}
-          onClick={() => {
-            if (action.save.quests.q02?.status !== 'complete') {
-              action.notify('Help Bruno first to unlock building.');
-              return;
-            }
-            navigation.destination = null;
-            useGame.setState({ build: !build });
-          }}
-        >
-          <Hammer size={17} />
-          Build
-        </button>
-        {build && (
-          <button
-            aria-label="Toggle block removal"
-            aria-pressed={removing}
-            onClick={() => {
-              touchInput.remove = !removing;
-              setRemoving(!removing);
-            }}
-          >
-            {removing ? 'Remove' : 'Place'}
-          </button>
+      </div>
+      <div className="touch-actions" hidden={trayOpen}>
+        {build ? (
+          <>
+            <button
+              aria-label="Place blocks"
+              aria-pressed={!removing}
+              onClick={() => {
+                touchInput.remove = false;
+                setRemoving(false);
+              }}
+            >
+              <Hammer size={22} />
+              <small>Place</small>
+            </button>
+            <button
+              aria-label="Remove blocks"
+              aria-pressed={removing}
+              onClick={() => {
+                touchInput.remove = true;
+                setRemoving(true);
+              }}
+            >
+              <Hand size={22} />
+              <small>Remove</small>
+            </button>
+            <button
+              aria-label="Rotate building view"
+              onClick={() => {
+                motion.yaw += Math.PI / 2;
+              }}
+            >
+              <Map size={22} />
+              <small>Turn view</small>
+            </button>
+            <button
+              aria-label="Exit building mode"
+              onClick={() => {
+                useGame.setState({ build: false });
+                touchInput.remove = false;
+                setRemoving(false);
+              }}
+            >
+              <ArrowUp size={22} />
+              <small>Exit build</small>
+            </button>
+          </>
+        ) : (
+          <>
+            <button aria-label="Basic attack" onClick={() => action.attack()}>
+              <Swords size={19} />
+              <small>Attack</small>
+            </button>
+            <button
+              className="touch-ability"
+              aria-label="Open companion abilities"
+              onClick={() => {
+                if (!action.save.active) {
+                  action.open('creatures');
+                  return;
+                }
+                useGame.setState({ abilityTrayOpen: true });
+              }}
+            >
+              <Sparkles size={19} />
+              <small>Ability</small>
+            </button>
+            <button
+              className="touch-interact"
+              data-available={!!target}
+              aria-label="Interact or gather"
+              onClick={() => {
+                navigation.destination = null;
+                action.interact();
+              }}
+            >
+              <Hand size={23} />
+              <small>{target ? 'Interact' : 'Gather'}</small>
+            </button>
+            <button
+              className="touch-jump"
+              aria-label="Jump"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                touchInput.jump = true;
+              }}
+              onPointerUp={() => (touchInput.jump = false)}
+              onPointerCancel={() => (touchInput.jump = false)}
+              onLostPointerCapture={() => (touchInput.jump = false)}
+            >
+              <ArrowUp size={24} />
+              <small>Jump</small>
+            </button>
+          </>
         )}
       </div>
-      <div className="touch-actions">
-        <button aria-label="Basic attack" onClick={() => action.attack()}>
-          <Swords size={19} />
-          <small>Attack</small>
-        </button>
-        <button aria-label="Elemental attack" onClick={() => action.attack(true)}>
-          <Sparkles size={19} />
-          <small>Ability</small>
-        </button>
-        <button
-          className="touch-interact"
-          aria-label="Interact or gather"
-          onClick={() => {
-            navigation.destination = null;
-            action.interact();
-          }}
-        >
-          <Hand size={23} />
-          <small>Interact / Gather</small>
-        </button>
-        <button
-          className="touch-jump"
-          aria-label="Jump"
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
-            touchInput.jump = true;
-          }}
-          onPointerUp={() => (touchInput.jump = false)}
-          onPointerCancel={() => (touchInput.jump = false)}
-          onLostPointerCapture={() => (touchInput.jump = false)}
-        >
-          <ArrowUp size={24} />
-          <small>Jump</small>
-        </button>
-      </div>
       <span className="touch-camera-hint">
-        {perspective === 'adventure'
-          ? 'Drag sideways to rotate · tap to move'
-          : 'Drag the world to look · tap to move'}
+        {build
+          ? `Tap the world to ${removing ? 'remove' : 'place'} blocks`
+          : 'Drag to look · tap to move'}
       </span>
     </div>
   );

@@ -58,3 +58,9 @@ The existing store routes legacy basic/elemental attack actions and new ability 
 `Squad` supplies a menu, collection ability descriptions, roster/role/health UI and cooldown/charge HUD. `AbilityEffects` uses fixed visual budgets (32 transient effects, 8 areas, 4 shields), with no projectile physics bodies or per-frame React updates. `AttackEffects` preserves the player's original slash; companion projectiles now share the new effect queue.
 
 See SAVE_MIGRATION.md for the additive version-1 adapter. Phase 2 systems remain absent.
+
+## HUD redesign
+
+`GameMenu` routes existing panels and world controls from a focus-trapped side drawer. `SquadHud` exposes a compact mobile summary and conditional ability tray; `TouchControls` consumes the same transient `abilityTrayOpen` flag to avoid duplicate action layers. These changes do not add a second gameplay state or modify adventure persistence. Settings store `uiScale` and tracked mission selection separately from Save.
+
+`game/ui.ts` projects mission selection/progress (including actual shelter validity) and notification presentation. `Notifications` shows a single prioritized toast, combines repeated pickup amounts and bounds pending messages to four. Menu input suppression and dialogue pause continue through the existing panel/dialogue flags; render-time world simulation remains in the original components.

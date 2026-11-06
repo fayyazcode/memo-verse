@@ -1,9 +1,13 @@
 'use client';
+import GameMenu from './GameMenu';
+import Notifications from './Notifications';
+import { trackedMission, missionProgress, uiScales } from '@/game/ui';
+import { Menu, Pause } from 'lucide-react';
 import { SquadHud, SquadPanel, AbilityList } from './Squad';
 import { ROLES, squadOf } from '@/game/squad';
 import { BINDING_OPTIONS, bindingLabel, eventBinding } from '@/game/bindings';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -74,6 +78,7 @@ const panelNames: Record<NonNullable<Panel>, string> = {
   journal: 'Adventure journal',
   creatures: 'Forest friends',
   squad: 'Creature squad',
+  menu: 'Adventure menu',
   craft: 'The workshop',
   shop: 'Foxy’s little shop',
   map: 'A world to discover',
@@ -107,7 +112,16 @@ function MiniMap({ large = false }: { large?: boolean }) {
   const position = useGame((s) => s.save.position),
     discoveries = useGame((s) => s.save.discoveries),
     save = useGame((s) => s.save);
-  const hints = missionGuidance(save);
+  const preferred = useGame((s) => s.settings.trackedQuest);
+  const [filters, setFilters] = useState({
+    missions: true,
+    npcs: true,
+    landmarks: true,
+    habitats: false,
+  });
+  const hints = filters.missions
+    ? missionGuidance(save, large ? undefined : trackedMission(save, preferred)?.id)
+    : [];
   const [selected, setSelected] = useState<string | null>(null);
   const grouped = hints.reduce<(typeof hints)[]>((groups, hint) => {
     const group = groups.find(
@@ -123,74 +137,110 @@ function MiniMap({ large = false }: { large?: boolean }) {
     top: `${((z + 37) / 102) * 100}%`,
   });
   return (
-    <div
-      className={`map-art ${large ? 'large' : ''}`}
-      aria-label="Map showing player, village and forest"
-    >
-      <div className="map-forest" />
-      <div className="map-river" />
-      <div className="map-path" />
-      <span className="map-label village">MOMO VILLAGE</span>
-      <span className="map-label forest">GREENWOOD</span>
-      {NPCS.map((n) => (
-        <span key={n.id} className="map-house" style={plot(n.pos[0], n.pos[2])} title={n.name}>
-          ◆
-        </span>
-      ))}
-      <span className="map-home" style={plot(2, 27)}>
-        <Home size={large ? 18 : 10} />
-      </span>
-      {large &&
-        OBJECTS.filter((o) => o.kind === 'landmark').map((o) => (
-          <span
-            key={o.id}
-            className="map-discovery"
-            style={plot(o.pos[0], o.pos[2])}
-            title={o.name}
-          >
-            {discoveries.includes(o.id) ? '✧' : '?'}
-          </span>
-        ))}
-      {grouped.map((group, i) => {
-        const hint = group[0];
-        return large ? (
-          <button
-            key={hint.id}
-            className="mission-marker"
-            style={plot(hint.position[0], hint.position[2])}
-            aria-label={`Mission destination: ${group.map((h) => h.label).join(', ')}`}
-            title={group.map((h) => `${h.mission}: ${h.label}`).join(' · ')}
-            onClick={() => setSelected(hint.id)}
-          >
-            {i + 1}
-          </button>
-        ) : (
-          <span
-            key={hint.id}
-            className="mission-marker"
-            style={plot(hint.position[0], hint.position[2])}
-            title={group.map((h) => h.label).join(' · ')}
-          >
-            {i + 1}
-          </span>
-        );
-      })}
-      {large && selectedHint && (
-        <div className="map-mission-info" role="status">
-          <b>
-            {selectedHint.mission} · {selectedHint.label}
-          </b>
-          <p>{selectedHint.help}</p>
-          <button onClick={() => setSelected(null)} aria-label="Close destination hint">
-            ×
-          </button>
-        </div>
+    <div className="map-view">
+      {large && (
+        <fieldset className="map-filters">
+          <legend>Show markers</legend>
+          {(Object.keys(filters) as (keyof typeof filters)[]).map((key) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                checked={filters[key]}
+                onChange={(e) => {
+                  setFilters({ ...filters, [key]: e.target.checked });
+                  setSelected(null);
+                }}
+              />
+              {key}
+            </label>
+          ))}
+        </fieldset>
       )}
-      <span className="map-player" style={plot(position[0], position[2])}>
-        <i />
-      </span>
-      <span className="north">N</span>
-      {large && <span className="map-scale">Village ↔ Forest · 1 block = 1 unit</span>}
+      <div
+        className={`map-art ${large ? 'large' : ''}`}
+        aria-label="Map showing player, village and forest"
+      >
+        <div className="map-forest" />
+        <div className="map-river" />
+        <div className="map-path" />
+        <span className="map-label village">MOMO VILLAGE</span>
+        <span className="map-label forest">GREENWOOD</span>
+        {filters.npcs &&
+          NPCS.map((n) => (
+            <span key={n.id} className="map-house" style={plot(n.pos[0], n.pos[2])} title={n.name}>
+              ◆
+            </span>
+          ))}
+        <span className="map-home" style={plot(2, 27)}>
+          <Home size={large ? 18 : 10} />
+        </span>
+        {large &&
+          filters.landmarks &&
+          OBJECTS.filter((o) => o.kind === 'landmark').map((o) => (
+            <span
+              key={o.id}
+              className="map-discovery"
+              style={plot(o.pos[0], o.pos[2])}
+              title={o.name}
+            >
+              {discoveries.includes(o.id) ? '✧' : '?'}
+            </span>
+          ))}
+        {grouped.map((group, i) => {
+          const hint = group[0];
+          return large ? (
+            <button
+              key={hint.id}
+              className="mission-marker"
+              style={plot(hint.position[0], hint.position[2])}
+              aria-label={`Mission destination: ${group.map((h) => h.label).join(', ')}`}
+              title={group.map((h) => `${h.mission}: ${h.label}`).join(' · ')}
+              onClick={() => setSelected(hint.id)}
+            >
+              {i + 1}
+            </button>
+          ) : (
+            <span
+              key={hint.id}
+              className="mission-marker"
+              style={plot(hint.position[0], hint.position[2])}
+              title={group.map((h) => h.label).join(' · ')}
+            >
+              {i + 1}
+            </span>
+          );
+        })}
+        {large && selectedHint && (
+          <div className="map-mission-info" role="status">
+            <b>
+              {selectedHint.mission} · {selectedHint.label}
+            </b>
+            <p>{selectedHint.help}</p>
+            <button onClick={() => setSelected(null)} aria-label="Close destination hint">
+              ×
+            </button>
+          </div>
+        )}
+        {large &&
+          filters.habitats &&
+          (Object.keys(CREATURES) as Species[])
+            .filter((id) => save.creatures[id])
+            .map((id) => (
+              <span
+                key={id}
+                className="map-habitat"
+                style={plot(CREATURES[id].pos[0], CREATURES[id].pos[2])}
+                title={`${CREATURES[id].name} habitat`}
+              >
+                ●
+              </span>
+            ))}
+        <span className="map-player" style={plot(position[0], position[2])}>
+          <i />
+        </span>
+        <span className="north">N</span>
+        {large && <span className="map-scale">Village ↔ Forest · 1 block = 1 unit</span>}
+      </div>
     </div>
   );
 }
@@ -320,7 +370,11 @@ function Hud() {
     open = useGame((s) => s.open),
     saveStatus = useGame((s) => s.saveStatus);
   const level = levelFromXp(s.xp);
-  const activeQuest = QUESTS.find((q) => s.quests[q.id]?.status === 'active');
+  const tracked = useGame((g) => g.settings.trackedQuest);
+  const trayOpen = useGame((g) => g.abilityTrayOpen);
+  const activeQuest = trackedMission(s, tracked);
+  const progress = activeQuest ? missionProgress(s, activeQuest.id) : null;
+  const hint = activeQuest ? missionGuidance(s, activeQuest.id)[0] : null;
   const targetName =
     (target === 'plant' && s.flags.includes('ability:plant') ? 'Moonflower · watered' : null) ??
     NPCS.find((n) => n.id === target)?.name ??
@@ -330,13 +384,25 @@ function Hud() {
   const forest = s.position[0] > 22;
   const wading = riverDepth({ x: s.position[0], y: s.position[1], z: s.position[2] }) > 0.12;
   return (
-    <div className="hud">
+    <div
+      className="hud"
+      data-tray-open={trayOpen}
+      data-building={build}
+      data-mission-active={!!activeQuest}
+      data-tasks-collapsed={tasksCollapsed}
+      data-map-expanded={!mapCollapsed}
+    >
       <header className="game-top">
-        <button className="brand small" onClick={() => open('pause')}>
+        <button
+          className="brand small"
+          aria-label="Open adventure menu"
+          onClick={() => open('menu')}
+        >
           <span className="brand-mark">
-            <Sprout size={19} />
+            <Menu size={22} />
           </span>
-          MomoVerse
+          <span className="brand-word">MomoVerse</span>
+          <span className="menu-word">Menu</span>
         </button>
         <div className="location-pill">
           <MapPin size={13} />
@@ -349,11 +415,13 @@ function Hud() {
             <span />
             {saveStatus}
           </span>
-          <IconButton label="Settings" onClick={() => open('settings')}>
-            <Settings size={17} />
-          </IconButton>
+          <span className="desktop-settings">
+            <IconButton label="Settings" onClick={() => open('settings')}>
+              <Settings size={17} />
+            </IconButton>
+          </span>
           <IconButton label="Pause game" onClick={() => open('pause')}>
-            <span className="pause-symbol">Ⅱ</span>
+            <Pause size={20} />
           </IconButton>
         </div>
       </header>
@@ -367,7 +435,13 @@ function Hud() {
               <b>Little Wanderer</b>
               <span>LV. {level.level}</span>
             </div>
-            <div className="health-bar">
+            <div
+              className="health-bar"
+              role="progressbar"
+              aria-label="Player health"
+              aria-valuenow={s.hp}
+              aria-valuemax={100 + (level.level - 1) * 5}
+            >
               <i style={{ width: `${(s.hp / (100 + (level.level - 1) * 5)) * 100}%` }} />
             </div>
             <div className="player-stats">
@@ -382,6 +456,47 @@ function Hud() {
             </div>
           </div>
         </div>
+        {activeQuest && tasksCollapsed && (
+          <div className="tracked-mission">
+            <button aria-label="Open tracked mission" onClick={() => open('journal')}>
+              <span className="quest-state">
+                {ready(s, activeQuest.id) ? '✓ REWARD READY' : '⚑ ACTIVE QUEST'}
+              </span>
+              <b>{activeQuest.name}</b>
+              <span>{hint?.label}</span>
+              <small>
+                {progress!.next ? `${progress!.current}/${progress!.next.count}` : 'Ready to claim'}{' '}
+                progress ·{' '}
+                {hint
+                  ? Math.round(
+                      Math.hypot(hint.position[0] - s.position[0], hint.position[2] - s.position[2])
+                    ) + 'm'
+                  : ''}
+              </small>
+              <progress
+                aria-label="Tracked mission progress"
+                max={progress!.total}
+                value={progress!.done}
+              />
+            </button>
+            {QUESTS.filter((q) => s.quests[q.id]?.status === 'active').length > 1 && (
+              <button
+                className="cycle-quest"
+                aria-label="Track next mission"
+                onClick={() => {
+                  const ids = QUESTS.filter((q) => s.quests[q.id]?.status === 'active').map(
+                    (q) => q.id
+                  );
+                  useGame.getState().configure({
+                    trackedQuest: ids[(ids.indexOf(activeQuest.id) + 1) % ids.length],
+                  });
+                }}
+              >
+                Next quest <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
+        )}
         <div className="hud-collapse-row">
           <button
             className="hud-collapse-button"
@@ -608,21 +723,6 @@ function Hud() {
               : 'Empty hand · select an item to equip'}
           </span>
         </div>
-        <nav className="menu-dock">
-          {(
-            [
-              { panel: 'inventory', icon: Backpack, key: 'I', label: 'Backpack' },
-              { panel: 'journal', icon: BookOpen, key: 'J', label: 'Journal' },
-              { panel: 'creatures', icon: PawPrint, key: 'C', label: 'Creatures' },
-              { panel: 'map', icon: Map, key: 'M', label: 'Map' },
-            ] as const
-          ).map((a) => (
-            <button key={a.key} onClick={() => open(a.panel)} title={`${a.label} (${a.key})`}>
-              <a.icon size={19} />
-              <kbd>{a.key}</kbd>
-            </button>
-          ))}
-        </nav>
       </footer>
       {wading && (
         <div className="water-hint">Wading · movement is slower · jump to climb the bank</div>
@@ -782,6 +882,8 @@ function Inventory() {
 }
 function Journal() {
   const s = useGame((s) => s.save);
+  const tracked = useGame((s) => s.settings.trackedQuest);
+  const [filter, setFilter] = useState('all');
   return (
     <>
       <p className="panel-intro">
@@ -789,8 +891,19 @@ function Journal() {
         {QUESTS.filter((q) => s.quests[q.id]?.status === 'complete').length} of 10 missions
         complete.
       </p>
+      <div className="journal-tabs" role="group" aria-label="Quest filters">
+        {['all', 'active', 'available', 'complete'].map((key) => (
+          <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}>
+            {key}
+          </button>
+        ))}
+      </div>
       <div className="journal-list">
-        {QUESTS.map((q, i) => {
+        {QUESTS.filter(
+          (q) =>
+            filter === 'all' ||
+            (filter === 'available' ? available(s, q.id) : s.quests[q.id]?.status === filter)
+        ).map((q, i) => {
           const state = s.quests[q.id],
             unlocked = available(s, q.id);
           return (
@@ -817,6 +930,15 @@ function Journal() {
                         : 'LOCKED'}
                 </span>
                 <h3>{q.name}</h3>
+                {state?.status === 'active' && (
+                  <button
+                    className="track-quest-button"
+                    aria-pressed={trackedMission(s, tracked)?.id === q.id}
+                    onClick={() => useGame.getState().configure({ trackedQuest: q.id })}
+                  >
+                    Track mission
+                  </button>
+                )}
                 <p>{q.description}</p>
                 {state?.status === 'active' && (
                   <ul>
@@ -1152,6 +1274,22 @@ function SettingsPanel() {
   return (
     <>
       <p className="panel-intro">Find your own pace. Settings are saved on this browser.</p>
+      <fieldset className="ui-scale-picker">
+        <legend>Interface size</legend>
+        <p>Larger labels in menus and gameplay. Controls stay inside the screen.</p>
+        <div role="group" aria-label="Interface scale">
+          {uiScales.map((value) => (
+            <button
+              className="secondary"
+              key={value}
+              aria-pressed={s.uiScale === value}
+              onClick={() => configure({ uiScale: value })}
+            >
+              {value}%
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <fieldset className="perspective-picker">
         <legend>Camera perspective</legend>
         <div role="group" aria-label="Camera perspective">
@@ -1396,12 +1534,44 @@ function Commands() {
   );
 }
 function PanelView() {
+  const dialogRef = useRef<HTMLElement>(null);
   const panel = useGame((s) => s.panel),
     s = useGame((s) => s.save);
+  useEffect(() => {
+    if (!panel) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const root = dialogRef.current;
+    const focusable = () =>
+      Array.from(
+        root?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled),select,input,a[href],[tabindex="0"]'
+        ) ?? []
+      ).filter((el) => el.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const list = focusable(),
+        first = list[0],
+        last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    root?.addEventListener('keydown', trap);
+    return () => {
+      root?.removeEventListener('keydown', trap);
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [panel]);
   if (!panel) return null;
   return (
     <div className="modal-backdrop" onClick={() => useGame.getState().open(null)}>
       <section
+        ref={dialogRef}
         className={`panel panel-${panel}`}
         role="dialog"
         aria-modal="true"
@@ -1418,7 +1588,9 @@ function PanelView() {
           </IconButton>
         </header>
         <div className="panel-body">
-          {panel === 'squad' ? (
+          {panel === 'menu' ? (
+            <GameMenu />
+          ) : panel === 'squad' ? (
             <SquadPanel />
           ) : panel === 'inventory' ? (
             <Inventory />
@@ -1503,22 +1675,13 @@ function PanelView() {
 }
 export default function Game() {
   const started = useGame((s) => s.started),
-    notice = useGame((s) => s.notice),
-    noticeId = useGame((s) => s.noticeId),
     settings = useGame((s) => s.settings);
-  const [visibleNotice, setVisibleNotice] = useState(false),
-    [webgl, setWebgl] = useState(true);
+  const [webgl, setWebgl] = useState(true);
   useEffect(() => {
     const c = document.createElement('canvas');
     if (!c.getContext('webgl2')) setWebgl(false);
     void useGame.getState().init();
   }, []);
-  useEffect(() => {
-    if (!notice) return;
-    setVisibleNotice(true);
-    const t = setTimeout(() => setVisibleNotice(false), 5000);
-    return () => clearTimeout(t);
-  }, [noticeId, notice]);
   useEffect(() => {
     if (started) ambience(settings.music);
     else ambience(0);
@@ -1538,13 +1701,22 @@ export default function Game() {
       if ((e.target as HTMLElement)?.matches('input,select,textarea')) return;
       const state = useGame.getState();
       if (!state.started) return;
-      if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown'].includes(e.code))
+      if (
+        !state.panel &&
+        !state.dialogue &&
+        ['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown'].includes(e.code)
+      )
         e.preventDefault();
       if (e.repeat) return;
       keys.add(e.code);
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyF', 'KeyB', 'Escape'].includes(e.code))
         navigation.destination = null;
       if (e.code === 'Escape') {
+        if (state.abilityTrayOpen) {
+          useGame.setState({ abilityTrayOpen: false });
+          keys.clear();
+          return;
+        }
         if (state.dialogue) useGame.setState({ dialogue: null });
         else state.open(state.panel ? null : 'pause');
         keys.clear();
@@ -1554,7 +1726,7 @@ export default function Game() {
         bindings = state.settings.bindings;
       if (
         binding === bindings.squad &&
-        (!state.panel || state.panel === 'squad') &&
+        (!state.panel || (state.panel === 'squad' && bindings.squad !== 'Tab')) &&
         !state.dialogue
       ) {
         e.preventDefault();
@@ -1648,7 +1820,12 @@ export default function Game() {
     };
   }, []);
   return (
-    <main className={`game-shell ${started ? 'playing' : 'on-title'}`}>
+    <main
+      className={`game-shell ${started ? 'playing' : 'on-title'}`}
+      data-quality={settings.quality}
+      data-reduced-motion={settings.reducedMotion}
+      style={{ '--ui-scale': String(settings.uiScale / 100) } as React.CSSProperties}
+    >
       <div className="world-container">
         {webgl ? (
           <World />
@@ -1664,12 +1841,7 @@ export default function Game() {
       {started ? <Hud /> : <MainMenu />}
       <Dialog />
       <PanelView />
-      {visibleNotice && (
-        <div className="toast" role="status">
-          <Sparkles size={17} />
-          {notice}
-        </div>
-      )}
+      <Notifications />
       {started && <TouchControls />}
     </main>
   );

@@ -188,6 +188,7 @@ test.describe('mobile squad abilities', () => {
       },
     };
     await seed(page, s);
+    await page.getByRole('button', { name: 'Open companion abilities' }).tap();
     await page.getByRole('button', { name: 'Cast Meteor Burst', exact: true }).tap();
     await expect(
       page.getByRole('button', { name: 'Cast Meteor Burst', exact: true })
@@ -196,6 +197,7 @@ test.describe('mobile squad abilities', () => {
     const after = await saved(page);
     expect(after.squad!.members.emberfox!.charge).toBe(0);
     expect(after.squad!.members.emberfox!.cooldowns.R).toBeGreaterThan(40);
+    await page.getByRole('button', { name: 'Close companion abilities' }).tap();
     await page.setViewportSize({ width: 390, height: 844 });
     if (await page.getByRole('button', { name: 'Minimize tasks', exact: true }).isVisible())
       await page.getByRole('button', { name: 'Minimize tasks', exact: true }).tap();
@@ -206,6 +208,7 @@ test.describe('mobile squad abilities', () => {
     if (companionCard)
       expect(squadHud.y).toBeGreaterThanOrEqual(companionCard.y + companionCard.height);
     await page.screenshot({ path: '/tmp/momo-phase1-mobile.png' });
+    await page.getByRole('button', { name: 'Open companion abilities' }).tap();
     for (const label of [
       'Cast Fireball',
       'Cast Flame Trail',
@@ -218,15 +221,18 @@ test.describe('mobile squad abilities', () => {
       expect(box.x + box.width).toBeLessThanOrEqual(391);
       expect(box.y + box.height).toBeLessThanOrEqual(845);
     }
+    await page.getByRole('button', { name: 'Close companion abilities' }).tap();
     await page.setViewportSize({ width: 844, height: 390 });
     await page.screenshot({ path: '/tmp/momo-phase1-landscape.png' });
-    await page.getByRole('button', { name: 'Open squad management' }).click();
+    await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+    await page.getByRole('button', { name: 'Creature squad', exact: true }).tap();
     await expect(page.getByRole('heading', { name: 'Creature squad' })).toBeVisible();
     await page
       .getByRole('dialog')
       .getByRole('button', { name: 'Command Aquabub', exact: true })
       .tap();
     await page.getByRole('button', { name: 'Close menu' }).tap();
+    await page.getByRole('button', { name: 'Open companion abilities' }).tap();
     await page.getByRole('button', { name: 'Cast Tidal Wave', exact: true }).tap();
     await expect
       .poll(async () => {
