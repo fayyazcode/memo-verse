@@ -1,11 +1,11 @@
 # MOMOVERSE: LIVING WORLD RPG
 ## Complete Codex Expansion Specification — Version 2.0
 
-**Project:** MomoVerse  
-**Task:** Extend an existing playable browser game  
-**Genre:** 3D Voxel Sandbox / Creature RPG / Settlement Simulation / Tactical Adventure  
-**Platform:** Desktop web browser  
-**Development Agent:** OpenAI Codex  
+**Project:** MomoVerse\
+**Task:** Extend an existing playable browser game\
+**Genre:** 3D Voxel Sandbox / Creature RPG / Settlement Simulation / Tactical Adventure\
+**Platform:** Desktop web browser\
+**Development Agent:** OpenAI Codex\
 **Priority:** Preserve existing functionality while adding integrated gameplay systems
 
 ---
@@ -629,8 +629,8 @@ Automatic invasion scheduling can be added later.
 
 Each invasion contains three waves.
 
-**Wave 1:** Basic enemies  
-**Wave 2:** Mixed enemies  
+**Wave 1:** Basic enemies\
+**Wave 2:** Mixed enemies\
 **Wave 3:** Elite enemy and support units
 
 ## 7.4 Enemy objectives
