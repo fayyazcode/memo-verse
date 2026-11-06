@@ -35,6 +35,8 @@ import { SKINS, cameraProfile } from '@/game/appearance';
 import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
+import { Villager, Workplaces } from './Villagers';
+import { HOMES, npcPosition, villagerPose, homePoint } from '@/game/villagers';
 const UP = new THREE.Vector3(0, 1, 0);
 function Box({
   position,
@@ -95,36 +97,114 @@ function Tree({
   );
 }
 function House({
+  resident,
   position,
   color = '#e4d5b1',
   roof = '#8a9c76',
   rotation = 0,
   shop = false,
 }: {
+  resident: string;
   position: Vec3;
   color?: string;
   roof?: string;
   rotation?: number;
   shop?: boolean;
 }) {
+  const second = useGame((s) => Math.floor(s.save.playTime));
+  const residentPose = villagerPose(resident, second);
+  const indoors = residentPose.indoors;
+  const door = useRef<THREE.Group>(null);
+  useFrame((_, dt) => {
+    const p = villagerPose(resident, useGame.getState().save.playTime);
+    const entrance = homePoint(resident, 2.5);
+    const near = Math.hypot(p.position[0] - entrance[0], p.position[2] - entrance[2]) < 3;
+    const player = playerRuntime.position;
+    const playerNear = Math.hypot(player[0] - entrance[0], player[2] - entrance[2]) < 2;
+    if (door.current)
+      door.current.rotation.y = THREE.MathUtils.damp(
+        door.current.rotation.y,
+        (near && p.moving) || playerNear ? -Math.PI * 0.6 : 0,
+        8,
+        dt
+      );
+  });
   return (
-    <group position={position} rotation={[0, rotation, 0]}>
+    <group
+      position={position}
+      rotation={[0, rotation, 0]}
+      userData={indoors ? { interactionId: resident } : {}}
+    >
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[2.6, 1.8, 2.1]} position={[0, 1.8, 0]} />
-        <Box position={[0, 1.7, 0]} size={[5.2, 3.4, 4.2]} color={color} />
-        <Box position={[0, 0.18, 0]} size={[5.6, 0.36, 4.6]} color="#a5a18a" />
+        {(
+          [
+            [
+              [-2.5, 1.88, 0],
+              [0.2, 3.4, 4.2],
+            ],
+            [
+              [2.5, 1.88, 0],
+              [0.2, 3.4, 4.2],
+            ],
+            [
+              [0, 1.88, -2],
+              [5.2, 3.4, 0.2],
+            ],
+            [
+              [-1.6, 1.88, 2],
+              [2, 3.4, 0.2],
+            ],
+            [
+              [1.6, 1.88, 2],
+              [2, 3.4, 0.2],
+            ],
+            [
+              [0, 3.02, 2],
+              [1.2, 1.12, 0.2],
+            ],
+            [
+              [0, 0.18, 0],
+              [5.6, 0.36, 4.6],
+            ],
+          ] as [Vec3, Vec3][]
+        ).map(([p, size], i) => (
+          <group key={i}>
+            <CuboidCollider position={p} args={[size[0] / 2, size[1] / 2, size[2] / 2]} />
+            <Box position={p} size={size} color={i === 6 ? '#a5a18a' : color} />
+          </group>
+        ))}
       </RigidBody>
       <mesh position={[0, 4, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
         <coneGeometry args={[4.4, 2, 4]} />
         <meshStandardMaterial color={roof} flatShading />
       </mesh>
       <Box position={[0, 4.8, 0.3]} size={[0.6, 1.4, 0.7]} color="#b9aa8e" />
-      <Box position={[0, 1.05, 2.13]} size={[1.15, 2.1, 0.12]} color="#7e7157" />
-      <Box position={[0.31, 1, 2.23]} size={[0.08, 0.08, 0.08]} color="#e6cc85" />
+      <group ref={door} position={[-0.58, 0.36, 2.14]}>
+        <Box position={[0.58, 1.05, 0]} size={[1.16, 2.1, 0.12]} color="#7e7157" />
+        <Box position={[0.92, 1, 0.1]} size={[0.08, 0.08, 0.08]} color="#e6cc85" />
+      </group>
+      <Box position={[0, 0.55, -0.1]} size={[1.3, 0.38, 2.4]} color="#92744e" />
+      <Box position={[0, 0.77, -0.1]} size={[1.2, 0.12, 2.3]} color="#b8c9a2" />
+      <Box position={[0, 0.88, 0.7]} size={[1, 0.16, 0.45]} color="#eee5d2" />
+      {indoors && (
+        <Label
+          text={`${NPCS.find((n) => n.id === resident)!.name} · ${residentPose.resting ? 'Resting' : 'At home'} · Knock to talk`}
+          position={[0, 2.8, 3.5]}
+          size={0.4}
+        />
+      )}
+
       {[-1.7, 1.7].map((x) => (
         <group key={x}>
           <Box position={[x, 1.9, 2.15]} size={[0.95, 1, 0.12]} color="#6e8274" />
-          <Box position={[x, 1.9, 2.23]} size={[0.7, 0.78, 0.05]} color="#d8e3c5" />
+          <mesh position={[x, 1.9, 2.23]}>
+            <boxGeometry args={[0.7, 0.78, 0.05]} />
+            <meshStandardMaterial
+              color={indoors ? '#ffe3a0' : '#d8e3c5'}
+              emissive="#ffc66b"
+              emissiveIntensity={indoors ? 0.55 : 0}
+            />
+          </mesh>
           <Box position={[x, 1.9, 2.27]} size={[0.06, 0.85, 0.06]} color="#8d8469" />
           <Box position={[x, 1.9, 2.27]} size={[0.8, 0.06, 0.06]} color="#8d8469" />
           <Box position={[x, 1.25, 2.35]} size={[1.2, 0.2, 0.5]} color="#8c7659" />
@@ -142,7 +222,9 @@ function House({
           {[-2.5, 2.5].map((x) => (
             <Box key={x} position={[x, 1.3, 3.7]} size={[0.14, 2.6, 0.14]} color="#867455" />
           ))}
-          <Box position={[0, 0.65, 3.5]} size={[4.5, 1.3, 0.8]} color="#ae8b61" />
+          {[-1.45, 1.45].map((x) => (
+            <Box key={x} position={[x, 0.65, 3.5]} size={[1.6, 1.3, 0.8]} color="#ae8b61" />
+          ))}
         </>
       )}
     </group>
@@ -326,11 +408,9 @@ function Scenery() {
         <Tree key={i} position={p as Vec3} scale={1.1 + (i % 3) * 0.15} />
       ))}
       <Tree position={[45, 0, 42]} scale={2} />
-      <House position={[-16, 0, -1]} roof="#8c9d77" shop />
-      <House position={[11, 0, 4]} roof="#b89372" color="#e2d3b5" />
-      <House position={[10, 0, -16]} roof="#899ea0" />
-      <House position={[-11, 0, -12]} roof="#9aab7d" rotation={0.15} />
-      <House position={[-25, 0, 8]} roof="#bb9b7a" rotation={0.2} />
+      {HOMES.map((h) => (
+        <House key={h.id} resident={h.id} {...h} />
+      ))}
       <group position={[0, 0, -3]}>
         <Box position={[0, 0.25, 0]} size={[3, 0.5, 3]} color="#a7ac96" />
         <Box position={[0, 0.6, 0]} size={[2.3, 0.3, 2.3]} color="#c2c9b2" />
@@ -708,6 +788,11 @@ function Player() {
     const destination = navigation.destination;
     const dir = new THREE.Vector3(dx, 0, dz).clampLength(0, 1).applyAxisAngle(UP, cameraYaw);
     if (destination && !paused) {
+      if (destination.interaction && NPCS.some((n) => n.id === destination.interaction)) {
+        const pos = npcPosition(destination.interaction, useGame.getState().save.playTime);
+        destination.x = pos[0];
+        destination.z = pos[2];
+      }
       const distance = Math.hypot(destination.x - p.x, destination.z - p.z);
       const arrival = destination.interaction
         ? destination.interaction === 'guardian'
@@ -824,7 +909,11 @@ function Player() {
       accumulator.current = 0;
       state.setPosition([p.x, p.y, p.z]);
       const candidates = [
-        ...NPCS.map((n) => ({ id: n.id, pos: n.pos, radius: 2.5 })),
+        ...NPCS.map((n) => ({
+          id: n.id,
+          pos: npcPosition(n.id, useGame.getState().save.playTime),
+          radius: 2.5,
+        })),
         ...OBJECTS.filter((o) => o.kind !== 'landmark').map((o) =>
           o.id === 'guardian' ? { ...o, pos: enemyPosition } : o
         ),
@@ -1175,7 +1264,9 @@ function clickWorld(e: ThreeEvent<PointerEvent>) {
   const target = id
     ? id === 'guardian'
       ? squadOf(state.save).enemyPosition
-      : (NPCS.find((n) => n.id === id)?.pos ??
+      : ((NPCS.some((n) => n.id === id)
+          ? npcPosition(id!, useGame.getState().save.playTime)
+          : undefined) ??
         OBJECTS.find((o) => o.id === id)?.pos ??
         (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
     : undefined;
@@ -1261,26 +1352,13 @@ function Scene() {
           >
             <Terrain />
             <Scenery />
+            <Workplaces />
             <Buildings />
             {OBJECTS.map((o) => (
               <ObjectMesh key={o.id} id={o.id} />
             ))}
             {NPCS.map((n) => (
-              <group key={n.id} position={n.pos} userData={{ interactionId: n.id }}>
-                <RigidBody type="fixed" colliders={false}>
-                  <CapsuleCollider args={[0.5, 0.4]} position={[0, 0.8, 0]} />
-                  <Character
-                    color={n.color}
-                    hoodie={n.id === 'moss' ? '#c5b68d' : n.id === 'luna' ? '#e1d9ca' : '#cec4ad'}
-                    npc
-                  />
-                </RigidBody>
-                <Label text={n.name} position={[0, 2.5, 0]} size={0.4} />
-                <mesh position={[0, 3, 0]} rotation={[0, 0, Math.PI / 4]}>
-                  <boxGeometry args={[0.17, 0.17, 0.04]} />
-                  <meshBasicMaterial color="#f3df9a" />
-                </mesh>
-              </group>
+              <Villager key={n.id} id={n.id} />
             ))}
             {(Object.entries(CREATURES) as [Species, (typeof CREATURES)[Species]][]).map(
               ([id, c]) => (

@@ -89,3 +89,9 @@ Replaced the persistent bottom navigation and mobile utility row with a side dra
 ## HUD minimization, world-name clarity and early treasure recovery
 
 Added remembered whole-status-HUD and individual quest-tracker minimization. Replaced low-resolution/scaled world-label textures with native fixed-size text and bounded collision-aware placement. Reconciled previously opened treasure into the forest-secret mission, including already-stuck saves, without replaying loot. All 116 logic tests pass; seven focused browser checks pass, and both new recovery/minimization scenarios passed again after final label placement. Build and TypeScript pass. Existing saves need no new game.
+
+## Villager movement, work and rest
+
+Replaced the five fixed villagers with daily work/errand/home/rest routines. Grandpa Moss tends plants, Foxy sorts supplies, Bruno hammers timber, Luna studies creatures, and Bloop brews remedies. Added visible workplaces, independent held tools and work poses, walking gaits, door-opening home entry, beds and warm occupied-home windows. Evening departures and morning returns are staggered within the existing twelve-minute active-play day.
+
+Shared positions now drive NPC bodies, click-to-talk navigation, nearby interaction, map markers, mission destinations and trading. Resting villagers can be reached by knocking at their home; dialogue and rewards remain available. Routines resume from the existing saved clock and pause with menus/dialogue. Existing save version, NPC IDs, quests, inventory and companion systems are retained. No settlement production or economy expansion was added.

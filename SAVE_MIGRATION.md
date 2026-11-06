@@ -15,3 +15,7 @@ Automated coverage includes representative old saves, unchanged legacy progress,
 ## Early forest treasure repair
 
 Version-1 saves may already contain the durable `chest` flag while the active Hidden Forest Secrets mission lacks its chest objective. Validation now returns a reconciled copy with that objective credited. The original input/disk record is untouched during reads; normal start/checkpoint persistence saves the repaired progress through the existing revision queue. Accepting the mission after opening the chest also credits it, and interacting with an already-open chest can reconcile stale runtime progress. This never replays treasure coins/items, never claims the mission reward automatically, and leaves completed missions alone. Unopened chests and resource-gathering objectives are not backfilled.
+
+## Villager routines
+
+Villager activity is derived from the existing active-play `playTime`. There are no new save fields or storage changes. Loading an old adventure immediately reconstructs each villager's work, commute or rest state; menus/dialogue and time spent away do not advance the routine. NPC identifiers, dialogue/quest state, rewards, inventory and trades retain their original save representation.

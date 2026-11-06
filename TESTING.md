@@ -103,3 +103,13 @@ Final logic suite: **116/116 tests in 11 files**. Added checks for a chest opene
 Focused browser run: **7/7 passed** (compact HUD/recovery, NPC reward collection, moonflower watering, mouse interactions, both cameras and mobile/desktop redesign). After the final player-clearance adjustment, both new scenarios passed again (**2/2**). The tests minimize/restore the full status HUD and the quest alone, reload their preferences, open companion abilities while minimized, verify native labels remain at least 14px with no transform scaling in Classic/Isometric, and collect the repaired quest from Bloop. A representative old save retains its two crystals and goes from 110 to 285 coins solely from the 175-coin mission reward.
 
 Screenshots reviewed: `/tmp/momo-minimized-hud-sharp-labels.png`, `/tmp/momo-sharp-labels-isometric.png`, `/tmp/momo-compact-quest.png`. Native text rendering/collision placement was inspected in both camera views. These remain software-rendered Chromium checks rather than physical-device or live Netlify verification.
+
+## Villager daily routines
+
+`tests/villagers.test.ts` covers outdoor route clearance for all five villagers, rotated-door entry, errands/work/home/rest/return transitions, bounded commute speed, daily reconstruction from version-1 saves, nighttime quest reward guidance, and local/remote trade validation. The full logic suite passes: **121 tests in 12 files**. Production build (including TypeScript) passes.
+
+`e2e/villagers.spec.ts` exercises moving map markers, visible activity labels, menu pause, resting-home interaction, a real quest reward and save/reload. Workplaces and routines do not generate inventory items, money, XP or quest credit. Routes cover static village scenery; player construction remains confined to the existing homestead outside these routes.
+
+Chromium regression run: **8/8 passed** across `villagers`, `foundation` and `compact-hud`. This includes live marker movement, pause, home quest rewards and reload, ordinary mission acceptance, player movement, resource gathering, housing persistence, mobile HUD minimization, sharp labels and early forest treasure recovery. Work/rest screenshots were reviewed. Browser rendering uses software WebGL here; these checks do not establish physical-device frame rates.
+
+After final turning/sleep alignment polish, the production build passed again and both routine browser scenarios passed again (**2/2**) against the updated port-3000 preview. The final logic suite remains **121/121 passing**.

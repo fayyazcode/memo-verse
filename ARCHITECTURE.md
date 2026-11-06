@@ -70,3 +70,11 @@ See SAVE_MIGRATION.md for the additive version-1 adapter. Phase 2 systems remain
 `WorldLabels.tsx` replaces Label canvas sprites with a managed DOM overlay anchored by Three groups. A bounded render-loop layout projects anchors, maintains fixed readable pixel sizes, resolves collisions around the player, and cleans up mounted label elements. The overlay is non-interactive and sits below HUD/dialogue layers.
 
 `reconcilePermanentProgress` projects the existing chest-opened flag into active quest progress during save validation, acceptance and repeated chest interaction. It reuses quest events without replaying treasure or mission rewards. Save version, storage key and revision checks are unchanged; migration details are in SAVE_MIGRATION.md.
+
+## Villager daily routines
+
+`game/villagers.ts` is the shared, deterministic source of NPC positions and activities. It reconstructs five daily routines from the existing `Save.playTime`, without adding save fields. Each 720-second active-play day includes staggered work errands, a routed walk home starting at seconds 420–484, rest, and a return to work starting at seconds 630–662. Pauses, dialogue, background-tab suspension and save/resume reuse the existing simulation clock.
+
+Cached four-neighbour village routes avoid the house footprints, tree trunks, fountain, benches, stations and work surfaces. Indoor waypoints use each home's rotated doorway. `Villagers` applies those positions to kinematic bodies, smooths rendered motion, and supplies native labels. `Character` adds independent NPC gait/work poses and job-specific tools; player equipment and attack poses retain their existing implementation. Hollow house walls, opening doors, beds and lit windows represent home/rest states.
+
+Click navigation refreshes moving NPC destinations. Proximity interaction, map markers, mission guidance and Foxy's trade-distance validation use `npcPosition`, which returns the front-door approach when a villager is indoors. Conversations, deliveries and rewards remain available while villagers rest. These routines are cosmetic world activity: they do not produce resources or introduce settlement jobs/economy systems.

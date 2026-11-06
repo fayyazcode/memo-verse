@@ -1,3 +1,4 @@
+import { npcPosition } from './villagers';
 import { defaultBindings, validBindings } from './bindings';
 import {
   ABILITIES,
@@ -698,7 +699,8 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = get().save,
       price = buy ? ITEMS[id].buy : ITEMS[id].sell;
     if (!price) return;
-    if (Math.hypot(s.position[0] + 15, s.position[2] - 6) > 5) {
+    const foxy = npcPosition('foxy', s.playTime);
+    if (Math.hypot(s.position[0] - foxy[0], s.position[2] - foxy[2]) > 5) {
       get().notify('Visit Foxy to trade.');
       return;
     }

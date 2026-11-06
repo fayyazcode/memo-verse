@@ -1,4 +1,5 @@
 'use client';
+import { npcPosition, villagerPose } from '@/game/villagers';
 import GameMenu from './GameMenu';
 import Notifications from './Notifications';
 import { trackedMission, missionProgress, uiScales } from '@/game/ui';
@@ -167,7 +168,13 @@ function MiniMap({ large = false }: { large?: boolean }) {
         <span className="map-label forest">GREENWOOD</span>
         {filters.npcs &&
           NPCS.map((n) => (
-            <span key={n.id} className="map-house" style={plot(n.pos[0], n.pos[2])} title={n.name}>
+            <span
+              key={n.id}
+              className="map-house"
+              data-villager={n.id}
+              style={plot(npcPosition(n.id, save.playTime)[0], npcPosition(n.id, save.playTime)[2])}
+              title={`${n.name} · ${villagerPose(n.id, save.playTime).activity}`}
+            >
               ◆
             </span>
           ))}
@@ -790,6 +797,7 @@ function Dialog() {
             </button>
           </div>
           <h2>{npc.name}</h2>
+          <p className="section-kicker">{villagerPose(id, s.playTime).activity}</p>
           <p>
             {topic
               ? `There’s always something to discover. ${id === 'luna' ? 'Craft treats at Bruno’s bench. Emberfox likes warm treats, Aquabub likes river fruit, Mosshell likes mineral snacks, and Zaplet loves charged treats.' : id === 'bruno' ? 'Start with a pickaxe. For your shelter, make three two-block-high walls around an empty cell, add a roof, and leave a doorway. Twelve blocks alone won’t make a home.' : id === 'bloop' ? 'Find the Ancient Oak, River Bend, and Crystal Clearing. Your companions can help with plants, rocks, and power devices.' : id === 'foxy' ? 'I buy common resources. All prices are per item. Keep supplies you need for quests!' : 'Speak with villagers, accept missions, and explore. Your journal will keep track of everything.'}`

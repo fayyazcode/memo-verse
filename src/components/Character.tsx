@@ -4,6 +4,9 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import HeldItem from './HeldItem';
+import { WorkProp } from './VillagerTools';
+import { villagerPose } from '@/game/villagers';
+import { useGame } from '@/game/store';
 import { gaitPose, attackPose } from '@/game/appearance';
 import { playerRuntime, companionRuntime } from '@/game/input';
 import { CREATURES, type Species } from '@/game/data';
@@ -31,6 +34,7 @@ export function Character({
   moving = false,
   running = false,
   npc = false,
+  villagerId,
   accent = '#c7b99c',
   accessory = 'none',
 }: {
@@ -39,6 +43,7 @@ export function Character({
   moving?: boolean;
   running?: boolean;
   npc?: boolean;
+  villagerId?: string;
   accent?: string;
   accessory?: 'none' | 'cap' | 'scarf';
 }) {
@@ -47,17 +52,26 @@ export function Character({
     right = useRef<THREE.Group>(null),
     ears = useRef<THREE.Group>(null),
     leftArm = useRef<THREE.Group>(null),
-    rightArm = useRef<THREE.Group>(null);
+    rightArm = useRef<THREE.Group>(null),
+    workTool = useRef<THREE.Group>(null),
+    npcTime = useRef(0);
   useFrame(({ clock }, dt) => {
-    const t = clock.elapsedTime,
-      speed = running ? 14 : 9;
-    const swing = moving ? Math.sin(t * speed) * 0.5 : Math.sin(t * 2) * 0.025;
+    const routine = villagerId ? villagerPose(villagerId, useGame.getState().save.playTime) : null;
+    const walking = routine?.moving ?? moving;
+    const working = routine?.working ?? false;
+    if (workTool.current) workTool.current.visible = working;
+    const state = useGame.getState();
+    if (routine && state.started && !state.panel && !state.dialogue && !document.hidden)
+      npcTime.current += Math.min(dt, 0.1);
+    const t = routine ? npcTime.current : clock.elapsedTime,
+      speed = running ? 14 : routine ? 6 : 9;
+    const swing = walking ? Math.sin(t * speed) * 0.5 : Math.sin(t * 2) * 0.025;
     if (left.current) left.current.rotation.x = swing;
     if (right.current) right.current.rotation.x = -swing;
     if (root.current)
       root.current.position.y = THREE.MathUtils.damp(
         root.current.position.y,
-        moving ? Math.abs(Math.sin(t * speed)) * 0.055 : Math.sin(t * 2) * 0.02,
+        walking ? Math.abs(Math.sin(t * speed)) * 0.055 : Math.sin(t * 2) * 0.02,
         12,
         dt
       );
@@ -67,8 +81,11 @@ export function Character({
     [leftArm, rightArm].forEach((arm, i) => {
       if (arm.current) {
         const sign = i === 0 ? -1 : 1;
-        arm.current.rotation.x =
-          action === 'attack'
+        arm.current.rotation.x = working
+          ? villagerId === 'luna' || villagerId === 'foxy'
+            ? -0.95 + Math.sin(t * 2) * 0.12
+            : -0.7 + Math.sin(t * 4) * 0.65
+          : action === 'attack'
             ? -0.3 - attackPose(Date.now(), playerRuntime.actionStarted) * 1.7 * (i === 1 ? 1 : 0.4)
             : action === 'mine'
               ? -0.3 -
@@ -84,7 +101,7 @@ export function Character({
                     ? -1
                     : air
                       ? -0.6
-                      : moving
+                      : walking
                         ? -swing * 0.8 * sign
                         : 0;
         arm.current.rotation.z = sign * (action === 'celebrate' ? 2.5 : air ? 0.6 : 0.16);
@@ -173,6 +190,11 @@ export function Character({
           <Orb scale={[0.14, 0.3, 0.16]} color={hoodie} />
           <Orb position={[0, -0.24, 0.035]} scale={[0.13, 0.13, 0.13]} color={color} />
           {!npc && v === 1 && <HeldItem />}
+          {villagerId && v === 1 && (
+            <group ref={workTool}>
+              <WorkProp id={villagerId} />
+            </group>
+          )}
         </group>
       ))}
       <mesh position={[0, 0.73, 0.313]}>

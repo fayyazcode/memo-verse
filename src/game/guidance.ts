@@ -10,6 +10,7 @@ import {
   type Species,
   type Vec3,
 } from './data';
+import { npcPosition } from './villagers';
 import { count, validShelter } from './rules';
 import type { Save } from './store';
 export type MissionHint = {
@@ -23,7 +24,10 @@ export type MissionHint = {
 };
 export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
   const hints: MissionHint[] = [];
-  const npc = (id: string) => NPCS.find((n) => n.id === id)!;
+  const npc = (id: string) => ({
+    ...NPCS.find((n) => n.id === id)!,
+    pos: npcPosition(id, save.playTime),
+  });
   for (const quest of QUESTS) {
     const state = save.quests[quest.id];
     if (state?.status !== 'active' || (onlyQuest && quest.id !== onlyQuest)) continue;
@@ -39,7 +43,7 @@ export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
         questId: quest.id,
         mission: quest.name,
         label: 'Claim your reward',
-        help: `Return to ${giver.name}, open dialogue, and collect your reward.`,
+        help: `Return to ${giver.name}, open dialogue, and collect your reward. If they are resting, knock at their marked home door.`,
         position: giver.pos,
         remaining: 1,
       });
@@ -52,7 +56,7 @@ export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
       if (objective.event === 'talk') {
         const n = npc(target);
         position = n.pos;
-        help = `Find ${n.name} in the village. Click them or press E nearby to talk.`;
+        help = `Find ${n.name} in the village. Click them or press E nearby to talk. If they are resting, knock at their marked home door.`;
       }
       if (objective.event === 'gather') {
         const nodes = OBJECTS.filter((o) => o.item === target);
