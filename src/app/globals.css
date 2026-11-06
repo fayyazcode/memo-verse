@@ -2811,3 +2811,52 @@ kbd {
   font-size: 10px;
   font-weight: 500;
 }
+.perspective-picker {
+  border: 1px solid #dce3cc;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 0 20px;
+}
+.perspective-picker legend {
+  padding: 0 8px;
+  font-size: 13px;
+  color: #6d8259;
+}
+.perspective-picker > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.perspective-picker button {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8e0c8;
+  border-radius: 10px;
+  background: #f0f2e4;
+}
+.perspective-picker button[aria-pressed='true'] {
+  background: #e0ebcc;
+  border-color: #8aa368;
+}
+.perspective-picker b {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+.perspective-picker small {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  color: #8a967a;
+}
+.touch-utilities .touch-view-switch {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 5px 8px;
+  font-size: 8px;
+}

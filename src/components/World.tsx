@@ -26,7 +26,7 @@ import { keys, motion, playerRuntime, companionRuntime, navigation } from '@/gam
 import { touchInput, touchLook } from '@/game/touch';
 import AttackEffects from './AttackEffects';
 import { ArchedBridge, RiverWater } from './River';
-import { SKINS, cameraDistance } from '@/game/appearance';
+import { SKINS, cameraProfile } from '@/game/appearance';
 import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
@@ -640,12 +640,18 @@ function ObjectMesh({ id }: { id: string }) {
 }
 function Player() {
   const skin = useGame((s) => s.settings.skin);
+  const perspective = useGame((s) => s.settings.perspective);
   const mobile = useThree((s) => s.size.width <= 900) || matchMedia('(pointer: coarse)').matches;
   const mobileRef = useRef(mobile);
   mobileRef.current = mobile;
   const body = useRef<RapierRigidBody>(null),
     visual = useRef<THREE.Group>(null);
-  const { camera } = useThree();
+  const { camera, size, set: setThree } = useThree();
+  const originalCamera = useRef(camera);
+  const isoCamera = useMemo(() => new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 180), []);
+  useEffect(() => {
+    setThree({ camera: perspective === 'adventure' ? isoCamera : originalCamera.current });
+  }, [perspective, isoCamera, setThree]);
   const { world, rapier } = useRapier();
   const [moving, setMoving] = useState(false),
     [running, setRunning] = useState(false);
@@ -667,12 +673,13 @@ function Player() {
       if ((state.started && !previous.started) || Math.hypot(p[0] - old[0], p[2] - old[2]) > 15) {
         body.current?.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
         body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        const distance = cameraDistance(state.settings, mobileRef.current);
-        look.current.set(p[0], p[1] + 0.8, p[2]);
+        const profile = cameraProfile(state.settings, mobileRef.current, motion.pitch);
+        const cameraYaw = motion.yaw + profile.yawOffset;
+        look.current.set(p[0], p[1] + profile.focusHeight, p[2]);
         camPos.current.set(
-          p[0] + Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
-          p[1] + 0.8 + Math.sin(motion.pitch) * distance,
-          p[2] + Math.cos(motion.yaw) * Math.cos(motion.pitch) * distance
+          p[0] + Math.sin(cameraYaw) * Math.cos(profile.pitch) * profile.distance,
+          p[1] + profile.focusHeight + Math.sin(profile.pitch) * profile.distance,
+          p[2] + Math.cos(cameraYaw) * Math.cos(profile.pitch) * profile.distance
         );
       }
     });
@@ -683,6 +690,8 @@ function Player() {
     const dt = Math.min(rawDt, 0.05),
       state = useGame.getState(),
       p = b.translation();
+    const profile = cameraProfile(state.settings, mobileRef.current, motion.pitch);
+    const cameraYaw = motion.yaw + profile.yawOffset;
     const paused = !state.started || !!state.panel || !!state.dialogue || document.hidden;
     const groundRay = new rapier.Ray({ x: p.x, y: p.y - 0.4, z: p.z }, { x: 0, y: -1, z: 0 });
     const hit = world.castRay(groundRay, 0.65, true, undefined, undefined, undefined, b);
@@ -699,7 +708,7 @@ function Player() {
     }
     if (paused || dx || dz) navigation.destination = null;
     const destination = navigation.destination;
-    const dir = new THREE.Vector3(dx, 0, dz).clampLength(0, 1).applyAxisAngle(UP, motion.yaw);
+    const dir = new THREE.Vector3(dx, 0, dz).clampLength(0, 1).applyAxisAngle(UP, cameraYaw);
     if (destination && !paused) {
       const distance = Math.hypot(destination.x - p.x, destination.z - p.z);
       const arrival = destination.interaction
@@ -777,16 +786,36 @@ function Player() {
     playerRuntime.moving = isMoving;
     playerRuntime.running = isRunning;
     playerRuntime.grounded = grounded;
-    const focus = new THREE.Vector3(p.x, p.y + 0.8, p.z),
-      distance = cameraDistance(state.settings, mobileRef.current);
+    const focus = new THREE.Vector3(p.x, p.y + profile.focusHeight, p.z),
+      distance = profile.distance;
+    if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
+      const ortho = camera as THREE.OrthographicCamera;
+      const half = profile.span / 2;
+      const aspect = size.width / size.height;
+      if (ortho.top !== half || ortho.right !== half * aspect) {
+        ortho.left = -half * aspect;
+        ortho.right = half * aspect;
+        ortho.top = half;
+        ortho.bottom = -half;
+        ortho.updateProjectionMatrix();
+      }
+    } else {
+      const perspectiveCamera = camera as THREE.PerspectiveCamera;
+      const nextFov = THREE.MathUtils.damp(perspectiveCamera.fov, profile.fov, 8, dt);
+      if (Math.abs(perspectiveCamera.fov - nextFov) > 0.001) {
+        perspectiveCamera.fov = nextFov;
+        perspectiveCamera.updateProjectionMatrix();
+      }
+    }
     const offset = new THREE.Vector3(
-      Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
-      Math.sin(motion.pitch) * distance,
-      Math.cos(motion.yaw) * Math.cos(motion.pitch) * distance
+      Math.sin(cameraYaw) * Math.cos(profile.pitch) * distance,
+      Math.sin(profile.pitch) * distance,
+      Math.cos(cameraYaw) * Math.cos(profile.pitch) * distance
     );
     const ray = new rapier.Ray(focus, offset.clone().normalize());
     const obstruction = world.castRay(ray, distance, true, undefined, undefined, undefined, b);
-    if (obstruction) offset.setLength(Math.max(1.2, obstruction.timeOfImpact - 0.4));
+    if (profile.projection === 'perspective' && obstruction)
+      offset.setLength(Math.max(1.2, obstruction.timeOfImpact - 0.4));
     const desired = focus.clone().add(offset);
     camPos.current.lerp(desired, state.settings.reducedMotion ? 1 : 1 - Math.exp(-8 * dt));
     look.current.lerp(focus, 1 - Math.exp(-12 * dt));

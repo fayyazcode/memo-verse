@@ -5,6 +5,7 @@ import { useGame } from '@/game/store';
 import { navigation, motion } from '@/game/input';
 import { joystickVector, resetTouch, touchInput, touchLook } from '@/game/touch';
 export default function TouchControls() {
+  const perspective = useGame((s) => s.settings.perspective);
   const busy = useGame((s) => !!s.panel || !!s.dialogue),
     build = useGame((s) => s.build);
   const stick = useRef<HTMLDivElement>(null),
@@ -44,7 +45,8 @@ export default function TouchControls() {
       if (touchLook.dragged) {
         navigation.destination = null;
         motion.yaw -= dx * 0.005 * useGame.getState().settings.sensitivity;
-        motion.pitch = Math.max(0.15, Math.min(1.1, motion.pitch + dy * 0.004));
+        if (useGame.getState().settings.perspective === 'classic')
+          motion.pitch = Math.max(0.15, Math.min(1.1, motion.pitch + dy * 0.004));
       }
     };
     const up = (e: globalThis.PointerEvent) => {
@@ -114,6 +116,20 @@ export default function TouchControls() {
         <small>MOVE</small>
       </div>
       <div className="touch-utilities">
+        <button
+          className="touch-view-switch"
+          aria-label="Switch camera perspective"
+          aria-pressed={perspective === 'adventure'}
+          onClick={() =>
+            useGame
+              .getState()
+              .configure({ perspective: perspective === 'classic' ? 'adventure' : 'classic' })
+          }
+        >
+          <Map size={17} />
+          {perspective === 'classic' ? 'Classic' : 'Isometric'}
+        </button>
+
         <button
           aria-label="Toggle sprint"
           aria-pressed={running}
@@ -192,7 +208,11 @@ export default function TouchControls() {
           <small>Jump</small>
         </button>
       </div>
-      <span className="touch-camera-hint">Drag the world to look · tap to move</span>
+      <span className="touch-camera-hint">
+        {perspective === 'adventure'
+          ? 'Drag sideways to rotate · tap to move'
+          : 'Drag the world to look · tap to move'}
+      </span>
     </div>
   );
 }

@@ -24,3 +24,35 @@ export function attackPose(now: number, start: number, duration = 650) {
   const t = Math.max(0, Math.min(1, (now - start) / duration));
   return Math.sin(t * Math.PI);
 }
+
+export function cameraProfile(
+  settings: {
+    distance: number;
+    mobileDistance: number;
+    perspective?: 'classic' | 'adventure';
+    isometricSpan?: number;
+  },
+  mobile: boolean,
+  pitch: number
+) {
+  const base = cameraDistance(settings, mobile);
+  return settings.perspective === 'adventure'
+    ? {
+        distance: 40,
+        pitch: Math.atan(1 / Math.sqrt(2)),
+        focusHeight: 0.8,
+        fov: 48,
+        projection: 'orthographic' as const,
+        yawOffset: Math.PI / 4,
+        span: settings.isometricSpan ?? 28,
+      }
+    : {
+        distance: base,
+        pitch,
+        focusHeight: 0.8,
+        fov: 48,
+        projection: 'perspective' as const,
+        yawOffset: 0,
+        span: 28,
+      };
+}

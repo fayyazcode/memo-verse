@@ -93,6 +93,8 @@ export type Settings = {
   distance: number;
   mobileDistance: number;
   skin: SkinId;
+  perspective: 'classic' | 'adventure';
+  isometricSpan: number;
 };
 export const defaultSettings: Settings = {
   music: 0.35,
@@ -103,6 +105,8 @@ export const defaultSettings: Settings = {
   distance: 13,
   mobileDistance: 17,
   skin: 'meadow',
+  perspective: 'classic',
+  isometricSpan: 28,
 };
 export function validateSave(value: unknown): Save {
   if (!value || typeof value !== 'object') throw Error('Invalid save file.');
@@ -350,6 +354,8 @@ export const useGame = create<GameStore>((set, get) => ({
           ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
         };
       } catch {}
+      if (!['classic', 'adventure'].includes(settings.perspective))
+        settings.perspective = 'classic';
       if (!SKINS[settings.skin]) settings.skin = 'meadow';
       if (settings.distance === 9) settings.distance = 13;
       set({ hasSave: !!saved, loading: false, settings });

@@ -66,3 +66,9 @@ The river has an actual shallow bed, sloping banks, animated surface ripples, sh
 Settings → Your outfit offers five free hoodie/accessory looks, remembered on this browser. Mobile has its own camera-distance slider (default 17 versus desktop 13) for a smaller on-screen player.
 
 Companions now use collision-aware ground following, smooth acceleration/turning, articulated distance-driven walk cycles and an idle/rest pose. Stay stops locomotion; stuck or distant companions retain a safe catch-up teleport. Attacking plays the player's swing and a healthy companion's lunge/effect; practice swings outside an encounter grant no damage, loot or quest credit. Combat range, health and cooldown validation still apply.
+
+## Camera perspectives
+
+The mobile Classic / Isometric button switches between the existing raised follow camera and a high diagonal orthographic camera based on the supplied reference screenshot. Isometric keeps parallel lines, a fixed elevated angle and a smaller player with more surroundings visible. Drag sideways to rotate; joystick movement follows the camera direction and tapping the world still moves or interacts.
+
+Settings → Camera perspective provides the same choice on desktop and mobile. Isometric world view size controls zoom (larger values show more world). The view and zoom are remembered in this browser.

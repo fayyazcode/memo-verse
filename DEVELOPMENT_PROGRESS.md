@@ -65,3 +65,9 @@ Final combined validation: production build and TypeScript pass; 55 logic tests 
 Replaced command-driven hover/bob locomotion with articulated two/four-foot gaits driven by actual travelled distance and speed. Pet roots stay grounded, settle into rest, and use a Rapier character controller with gravity, snap-to-ground and small-step support. Collision-aware following smooths acceleration/deceleration and turning, retaining safety catch-up for blocked/distant pets. Water following floats at the river level. The follower accounts for slower render frames rather than falling behind due to a 50ms movement cap.
 
 Five original hoodie/accessory skins are selectable in Settings and saved as browser preferences. A separate mobile zoom default of 17 reduces apparent player size without changing movement/collisions or desktop zoom. Player swings, companion lunges and colored elemental effects now follow attack intent; practice swings award nothing, and existing combat validation/cooldowns remain. Build/TypeScript and 61 logic tests pass; both mobile checks passed and the follower/outfit browser scenario passed after the timestep correction. Walking and outfit/attack screenshots were reviewed.
+
+## Two camera perspectives
+
+Added saved Classic/Isometric preferences, a mobile quick toggle and Settings selection. Classic retains its existing distance, pitch, focus and FOV. The supplied reference screenshot guided a true orthographic second camera with a 45° diagonal orientation and approximately 35° elevation. Its world-view size is adjustable independently. Camera-relative movement includes the diagonal offset, raycasting uses the active camera, and vertical touch drags preserve the Classic pitch while Isometric is selected.
+
+The reference website was blocked by the environment proxy; the user supplied the screenshot and selected high overhead/isometric. The implementation follows that visual reference without depending on website access.

@@ -1144,6 +1144,31 @@ function SettingsPanel() {
   return (
     <>
       <p className="panel-intro">Find your own pace. Settings are saved on this browser.</p>
+      <fieldset className="perspective-picker">
+        <legend>Camera perspective</legend>
+        <div role="group" aria-label="Camera perspective">
+          <button
+            aria-pressed={s.perspective === 'classic'}
+            onClick={() => configure({ perspective: 'classic' })}
+          >
+            <Compass size={20} />
+            <span>
+              <b>Classic view</b>
+              <small>The existing raised follow camera</small>
+            </span>
+          </button>
+          <button
+            aria-pressed={s.perspective === 'adventure'}
+            onClick={() => configure({ perspective: 'adventure' })}
+          >
+            <MapPin size={20} />
+            <span>
+              <b>Isometric view</b>
+              <small>High diagonal view of your surroundings</small>
+            </span>
+          </button>
+        </div>
+      </fieldset>
       <fieldset className="skin-picker">
         <legend>Your outfit</legend>
         <p>Keep your green look. Pick a hoodie and accessory.</p>
@@ -1176,6 +1201,14 @@ function SettingsPanel() {
               step: 0.1,
             },
             { key: 'distance', name: 'Camera distance', icon: Maximize, min: 4, max: 20, step: 1 },
+            {
+              key: 'isometricSpan',
+              name: 'Isometric world view size',
+              icon: Maximize,
+              min: 16,
+              max: 40,
+              step: 1,
+            },
             {
               key: 'mobileDistance',
               name: 'Mobile camera distance',
@@ -1519,7 +1552,8 @@ export default function Game() {
     const move = (e: MouseEvent) => {
       if (!motion.rotating) return;
       motion.yaw -= e.movementX * 0.005 * useGame.getState().settings.sensitivity;
-      motion.pitch = Math.max(0.15, Math.min(1.1, motion.pitch + e.movementY * 0.004));
+      if (useGame.getState().settings.perspective === 'classic')
+        motion.pitch = Math.max(0.15, Math.min(1.1, motion.pitch + e.movementY * 0.004));
     };
     const wheel = (e: WheelEvent) => {
       if (

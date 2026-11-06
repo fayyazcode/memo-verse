@@ -53,3 +53,23 @@ describe('attack animation intent', () => {
     expect(companionRuntime.attackStarted).toBe(started);
   });
 });
+
+describe('selectable perspectives', () => {
+  it('keeps classic camera parameters unchanged', async () => {
+    const { cameraProfile } = await import('../src/game/appearance');
+    expect(cameraProfile(defaultSettings, true, 0.68)).toMatchObject({
+      distance: 17,
+      pitch: 0.68,
+      focusHeight: 0.8,
+      fov: 48,
+    });
+  });
+  it('provides the reference-style orthographic diagonal without changing Classic', async () => {
+    const { cameraProfile } = await import('../src/game/appearance');
+    const p = cameraProfile({ ...defaultSettings, perspective: 'adventure' }, true, 0.68);
+    expect(p.projection).toBe('orthographic');
+    expect(p.yawOffset).toBeCloseTo(Math.PI / 4);
+    expect(p.pitch).toBeCloseTo(Math.atan(1 / Math.sqrt(2)));
+    expect(p.span).toBe(28);
+  });
+});
