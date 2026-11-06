@@ -2765,3 +2765,49 @@ kbd {
     bottom: 100px;
   }
 }
+.skin-picker {
+  border: 1px solid #dce3cc;
+  border-radius: 12px;
+  margin: 0 0 24px;
+  padding: 16px;
+}
+.skin-picker legend {
+  padding: 0 8px;
+  font-size: 13px;
+  color: #6d8259;
+}
+.skin-picker > p {
+  font-size: 10px;
+  color: #8b967d;
+  margin-bottom: 14px;
+}
+.skin-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skin-picker button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #d9dfca;
+  background: #f1f2e4;
+  border-radius: 9px;
+}
+.skin-picker button[aria-pressed='true'] {
+  background: #e2ebcf;
+  border-color: #8ca870;
+}
+.skin-picker button > span {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid;
+  border-radius: 8px;
+}
+.skin-picker b {
+  font-size: 10px;
+  font-weight: 500;
+}

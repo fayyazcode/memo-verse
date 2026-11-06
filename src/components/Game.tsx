@@ -47,7 +47,8 @@ import {
 } from '@/game/data';
 import { available, deliver, ready, useGame, type Panel } from '@/game/store';
 import { count, levelFromXp, maxCreatureHp, validShelter } from '@/game/rules';
-import { keys, motion, navigation } from '@/game/input';
+import { keys, motion, navigation, companionRuntime } from '@/game/input';
+import { SKINS, type SkinId } from '@/game/appearance';
 import { riverDepth } from '@/game/river';
 import { craftBatch, maxCraftBatches, type Recipe } from '@/game/crafting';
 import type { Save as GameSave } from '@/game/store';
@@ -476,7 +477,15 @@ function Hud() {
             <span>
               <b>{CREATURES[s.active].name}</b>
               <small>
-                {s.creatures[s.active]!.hp > 0 ? 'A friend by your side' : 'Needs village healing'}
+                {s.creatures[s.active]!.hp > 0
+                  ? Date.now() < companionRuntime.attackUntil
+                    ? 'Attacking'
+                    : useGame.getState().command === 'stay'
+                      ? 'Staying here'
+                      : companionRuntime.speed > 0.1
+                        ? 'Following you'
+                        : 'Resting nearby'
+                  : 'Needs village healing'}
               </small>
             </span>
             <kbd>V</kbd>
@@ -1135,6 +1144,24 @@ function SettingsPanel() {
   return (
     <>
       <p className="panel-intro">Find your own pace. Settings are saved on this browser.</p>
+      <fieldset className="skin-picker">
+        <legend>Your outfit</legend>
+        <p>Keep your green look. Pick a hoodie and accessory.</p>
+        <div>
+          {(Object.entries(SKINS) as [SkinId, (typeof SKINS)[SkinId]][]).map(([id, skin]) => (
+            <button
+              key={id}
+              aria-label={`Wear ${skin.name}`}
+              aria-pressed={s.skin === id}
+              onClick={() => configure({ skin: id })}
+            >
+              <span style={{ background: skin.hoodie, borderColor: skin.accent }} />
+              <b>{skin.name}</b>
+              {s.skin === id && <Check size={15} />}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <div className="settings-list">
         {(
           [
@@ -1148,7 +1175,15 @@ function SettingsPanel() {
               max: 2,
               step: 0.1,
             },
-            { key: 'distance', name: 'Camera distance', icon: Maximize, min: 4, max: 14, step: 1 },
+            { key: 'distance', name: 'Camera distance', icon: Maximize, min: 4, max: 20, step: 1 },
+            {
+              key: 'mobileDistance',
+              name: 'Mobile camera distance',
+              icon: Maximize,
+              min: 10,
+              max: 24,
+              step: 1,
+            },
           ] as const
         ).map((a) => (
           <label key={a.key}>

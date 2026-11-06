@@ -5,6 +5,7 @@ export const playerRuntime = {
   moving: false,
   running: false,
   grounded: true,
+  heading: 0,
   action: 'idle',
   actionUntil: 0,
   actionStarted: 0,
@@ -19,4 +20,14 @@ export const playerRuntime = {
 // Transient intent, deliberately excluded from saved adventures.
 export const navigation = {
   destination: null as { x: number; z: number; interaction?: string } | null,
+};
+
+export const companionRuntime = {
+  speed: 0,
+  distance: 0,
+  position: [0, 0, 0] as [number, number, number],
+  attackStarted: 0,
+  attackUntil: 0,
+  elemental: false,
+  target: [92, 0, 20] as [number, number, number],
 };

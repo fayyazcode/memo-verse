@@ -42,3 +42,7 @@ All current meshes, materials, icons, and sounds are locally generated or suppli
 ## River simulation and crossing
 
 `src/game/river.ts` defines shared river bounds, mean water level, bed elevation, arch height and shallow-water movement response. Terrain tiles split at river boundaries and render the depressed bed; compound colliders and bank ramps match it. `RiverWater` renders local shader waves and shimmer plus player ripples. `ArchedBridge` creates tilted planks and railings with matching colliders. `src/game/crafting.ts` plans bounded batch transactions and computes Max without assuming inventory capacity is monotonic after consuming ingredients.
+
+## Companion locomotion and appearance
+
+The active companion uses a kinematic Rapier character controller, gravity, snap-to-ground and autostep, with sensor geometry to avoid obstructing the player. Actual corrected travel drives `companionRuntime` speed/distance for articulated foot cycles in `CreatureModel`. `appearance.ts` defines gait/attack poses, outfit palettes and separate mobile zoom selection. Browser settings retain skin and mobile distance without changing the adventure save schema. `AttackEffects` renders transient swings/projectiles while the game store continues validating damage and cooldowns.

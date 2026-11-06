@@ -11,7 +11,7 @@ The browser configuration uses `/usr/bin/chromium` with SwiftShader for this clo
 
 ## What is covered
 
-55 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
+61 logic/integration tests cover stacking and capacity, atomic crafting transactions, invalid quantities, player leveling, elemental multipliers, quest prerequisites/objectives, unique campaign IDs and dependency cycles, duplicate reward prevention, actual shelter geometry, placement bounds, save schema validation, queued writes, stale local revisions, new-game replacement, resource pause/respawn, collection costs, healing, and shop balances.
 
 The campaign integration test completes all ten missions from an initially empty inventory using game actions. It directly positions the player and advances attack cooldown state for deterministic execution. It validates system connectivity; it is not a manual or browser playthrough and does not prove encounter timing, navigation, visual quality, or performance.
 
@@ -45,3 +45,7 @@ Batch crafting adds eight logic tests for scaled costs/output, insufficient ingr
 River checks validate arch endpoints/symmetry/center height, dry Aquabub placement, resource clearance, submersion bounds, drag/buoyancy and frame-delta limits. Browser traversal starts on the arch, walks to the bank, climbs back up and checks real saved player heights. A second scenario checks stable wading above the bed, shader errors and Aquabub befriending from the dry shore. Nearby moonflower watering and the batch-crafting UI were also rerun successfully against the river build.
 
 Combined crafting/river release: build and TypeScript pass; all 55 logic tests pass. Focused browser checks passed for batch crafting, moonflower watering, bridge traversal and wading/Aquabub collection. The final cleaned river layout was rechecked for traversal and water/creature access; the traversal assertion compares actual player height with the reached plank to tolerate software-renderer input timing. Screenshots reviewed.
+
+Appearance/animation logic tests cover rested and alternating diagonal gait poses, nonnegative foot lifts, attack wind-up/recovery, distinct skin palettes, mobile versus desktop zoom, practice-attack intent without rewards, and companion attack cooldowns. A browser flow observes actual following/resting status during movement, captures the pet walk and selected outfit, and verifies skin persistence after reload. Mobile touch tests are rerun to qualify the smaller view. These are functional software-rendered checks, not physical-device performance measurements.
+
+Pet/outfit release validation: build and TypeScript pass; all 61 logic tests pass. Both mobile scenarios passed with the farther camera. The follower/outfit scenario initially caught a low-FPS movement cap, then passed after the controller timestep was corrected. Skin persistence, walking-to-rest transitions and attack intent were checked; screenshots reviewed.

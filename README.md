@@ -60,3 +60,9 @@ Each recipe has a batch slider, number input, and Max button. The recipe shows t
 ## River and bridge
 
 The river has an actual shallow bed, sloping banks, animated surface ripples, shoreline highlights and a moving-player wake. Entering the water reduces movement speed and applies buoyancy/vertical drag; jump or walk up a bank to leave. The wooden bridge arches upward through individual planks with matching collision surfaces and curved railings. Aquabub waits on the dry eastern riverbank beyond the bridge. River fruit and stone deposits are on the banks, clear of the water and walkway.
+
+## Outfits, companion movement and attacks
+
+Settings → Your outfit offers five free hoodie/accessory looks, remembered on this browser. Mobile has its own camera-distance slider (default 17 versus desktop 13) for a smaller on-screen player.
+
+Companions now use collision-aware ground following, smooth acceleration/turning, articulated distance-driven walk cycles and an idle/rest pose. Stay stops locomotion; stuck or distant companions retain a safe catch-up teleport. Attacking plays the player's swing and a healthy companion's lunge/effect; practice swings outside an encounter grant no damage, loot or quest credit. Combat range, health and cooldown validation still apply.

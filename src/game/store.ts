@@ -26,7 +26,8 @@ import {
   type Stack,
 } from './rules';
 import { sound } from './audio';
-import { playerRuntime } from './input';
+import { SKINS, type SkinId } from './appearance';
+import { playerRuntime, companionRuntime } from './input';
 export type Panel =
   | null
   | 'inventory'
@@ -90,6 +91,8 @@ export type Settings = {
   quality: 'low' | 'medium' | 'high';
   reducedMotion: boolean;
   distance: number;
+  mobileDistance: number;
+  skin: SkinId;
 };
 export const defaultSettings: Settings = {
   music: 0.35,
@@ -98,6 +101,8 @@ export const defaultSettings: Settings = {
   quality: 'medium',
   reducedMotion: false,
   distance: 13,
+  mobileDistance: 17,
+  skin: 'meadow',
 };
 export function validateSave(value: unknown): Save {
   if (!value || typeof value !== 'object') throw Error('Invalid save file.');
@@ -345,6 +350,7 @@ export const useGame = create<GameStore>((set, get) => ({
           ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
         };
       } catch {}
+      if (!SKINS[settings.skin]) settings.skin = 'meadow';
       if (settings.distance === 9) settings.distance = 13;
       set({ hasSave: !!saved, loading: false, settings });
     } catch (e) {
@@ -695,6 +701,24 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   attack: (elemental = false) => {
     const s = get().save;
+    const cooldown = elemental ? s.abilityCooldown : s.attackCooldown;
+    if (cooldown > 0) return;
+    playerRuntime.action = 'attack';
+    playerRuntime.actionStarted = Date.now();
+    playerRuntime.actionUntil = Date.now() + 650;
+    if (s.active && s.creatures[s.active]?.hp && Date.now() >= companionRuntime.attackUntil) {
+      companionRuntime.attackStarted = Date.now();
+      companionRuntime.attackUntil = Date.now() + 650;
+      companionRuntime.elemental = elemental;
+      companionRuntime.target =
+        Math.hypot(s.position[0] - 92, s.position[2] - 20) < 6
+          ? [92, 0, 20]
+          : [
+              s.position[0] + Math.sin(playerRuntime.heading) * 3,
+              s.position[1],
+              s.position[2] + Math.cos(playerRuntime.heading) * 3,
+            ];
+    }
     if (!s.flags.includes('repaired')) {
       get().notify('The Guardian waits beyond the repaired passage.');
       return;
@@ -711,6 +735,9 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     if ((elemental ? s.abilityCooldown : s.attackCooldown) > 0) return;
+    companionRuntime.attackStarted = Date.now();
+    companionRuntime.attackUntil = Date.now() + 650;
+    companionRuntime.elemental = elemental;
     const damage = elementalDamage(
       elemental ? 18 : 10,
       elemental ? CREATURES[id].type : 'Neutral',

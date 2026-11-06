@@ -22,9 +22,11 @@ import {
 } from '@/game/data';
 import { useGame } from '@/game/store';
 import { validPlacement, type Block } from '@/game/rules';
-import { keys, motion, playerRuntime, navigation } from '@/game/input';
+import { keys, motion, playerRuntime, companionRuntime, navigation } from '@/game/input';
 import { touchInput, touchLook } from '@/game/touch';
+import AttackEffects from './AttackEffects';
 import { ArchedBridge, RiverWater } from './River';
+import { SKINS, cameraDistance } from '@/game/appearance';
 import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
@@ -637,6 +639,10 @@ function ObjectMesh({ id }: { id: string }) {
   );
 }
 function Player() {
+  const skin = useGame((s) => s.settings.skin);
+  const mobile = useThree((s) => s.size.width <= 900) || matchMedia('(pointer: coarse)').matches;
+  const mobileRef = useRef(mobile);
+  mobileRef.current = mobile;
   const body = useRef<RapierRigidBody>(null),
     visual = useRef<THREE.Group>(null);
   const { camera } = useThree();
@@ -661,7 +667,7 @@ function Player() {
       if ((state.started && !previous.started) || Math.hypot(p[0] - old[0], p[2] - old[2]) > 15) {
         body.current?.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
         body.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        const distance = state.settings.distance;
+        const distance = cameraDistance(state.settings, mobileRef.current);
         look.current.set(p[0], p[1] + 0.8, p[2]);
         camPos.current.set(
           p[0] + Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
@@ -745,6 +751,14 @@ function Player() {
     if (!keys.has('Space') && !touchInput.jump) jumpLatch.current = false;
     b.setLinvel({ x: dir.x * speed, y: vy, z: dir.z * speed }, true);
     b.setGravityScale(paused ? 0 : 1, true);
+    if (
+      visual.current &&
+      Date.now() < playerRuntime.actionUntil &&
+      playerRuntime.action === 'attack' &&
+      state.save.flags.includes('repaired') &&
+      Math.hypot(p.x - 92, p.z - 20) < 6
+    )
+      visual.current.rotation.y = Math.atan2(92 - p.x, 20 - p.z);
     if (visual.current && isMoving) {
       const target = Math.atan2(dir.x, dir.z);
       visual.current.rotation.y +=
@@ -759,11 +773,12 @@ function Player() {
       b.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
     playerRuntime.position = [p.x, p.y, p.z];
+    if (visual.current) playerRuntime.heading = visual.current.rotation.y;
     playerRuntime.moving = isMoving;
     playerRuntime.running = isRunning;
     playerRuntime.grounded = grounded;
     const focus = new THREE.Vector3(p.x, p.y + 0.8, p.z),
-      distance = state.settings.distance;
+      distance = cameraDistance(state.settings, mobileRef.current);
     const offset = new THREE.Vector3(
       Math.sin(motion.yaw) * Math.cos(motion.pitch) * distance,
       Math.sin(motion.pitch) * distance,
@@ -822,7 +837,13 @@ function Player() {
     >
       <CapsuleCollider args={[0.48, 0.3]} position={[0, 0.02, 0]} />
       <group ref={visual} position={[0, -0.78, 0]}>
-        <Character moving={moving} running={running} />
+        <Character
+          moving={moving}
+          running={running}
+          hoodie={SKINS[skin].hoodie}
+          accent={SKINS[skin].accent}
+          accessory={SKINS[skin].accessory}
+        />
       </group>
     </RigidBody>
   );
@@ -831,28 +852,117 @@ function Companion() {
   const id = useGame((s) => s.save.active),
     command = useGame((s) => s.command),
     healthy = useGame((s) => (s.save.active ? !!s.save.creatures[s.save.active]?.hp : false));
-  const ref = useRef<THREE.Group>(null);
-  const lastId = useRef<Species | null>(null);
-  useFrame((_, dt) => {
-    if (!ref.current || !id) return;
-    const p = playerRuntime.position;
-    if (lastId.current !== id) {
-      ref.current.position.set(p[0] - 1, 0, p[2] + 1);
-      lastId.current = id;
+  const { world, rapier } = useRapier();
+  const body = useRef<RapierRigidBody>(null),
+    visual = useRef<THREE.Group>(null),
+    controller = useRef<ReturnType<typeof world.createCharacterController> | null>(null),
+    fall = useRef(0),
+    blocked = useRef(0),
+    followSpeed = useRef(0);
+  useEffect(() => {
+    if (!id || !healthy || !body.current) return;
+    const c = world.createCharacterController(0.02);
+    c.enableAutostep(0.45, 0.25, true);
+    c.enableSnapToGround(0.45);
+    c.setMaxSlopeClimbAngle(Math.PI / 4);
+    controller.current = c;
+    const p = useGame.getState().save.position;
+    body.current.setTranslation({ x: p[0] - 1, y: p[1] - 0.74, z: p[2] + 1 }, true);
+    companionRuntime.speed = 0;
+    companionRuntime.distance = 0;
+    return () => {
+      world.removeCharacterController(c);
+      controller.current = null;
+      companionRuntime.speed = 0;
+    };
+  }, [id, healthy, world]);
+  useFrame((_, rawDt) => {
+    const b = body.current,
+      c = controller.current;
+    if (!b || !c) return;
+    const dt = Math.min(rawDt, 0.2),
+      s = useGame.getState(),
+      p = b.translation(),
+      player = playerRuntime.position;
+    if (s.panel || s.dialogue || !s.started || document.hidden) {
+      companionRuntime.speed = 0;
+      followSpeed.current = 0;
+      return;
     }
-    if (command === 'stay') return;
-    const distance = Math.hypot(ref.current.position.x - p[0], ref.current.position.z - p[2]);
-    if (distance > 15) ref.current.position.set(p[0] - 1, 0, p[2] + 1);
-    if (distance > 1.8) {
-      const desired = new THREE.Vector3(p[0] - 1, 0, p[2] + 1);
-      ref.current.position.lerp(desired, Math.min(1, dt * 3));
-      ref.current.lookAt(p[0], 0, p[2]);
+    const distance = Math.hypot(p.x - player[0], p.z - player[2]);
+    if (distance > 15 || blocked.current > 3) {
+      b.setTranslation({ x: player[0] - 1, y: player[1] + 0.2, z: player[2] + 1 }, true);
+      blocked.current = 0;
+      fall.current = 0;
+      companionRuntime.speed = 0;
+      followSpeed.current = 0;
+      return;
+    }
+    const desired = new THREE.Vector3(player[0] - 1 - p.x, 0, player[2] + 1 - p.z);
+    const targetSpeed =
+      command === 'follow' && distance > 1.6
+        ? Math.min(distance > 5 ? 6 : 3.5, (distance - 1.5) * 2.4)
+        : 0;
+    followSpeed.current =
+      command === 'stay' ? 0 : THREE.MathUtils.damp(followSpeed.current, targetSpeed, 7, dt);
+    const moving = followSpeed.current > 0.04;
+    const step = moving ? Math.min(desired.length(), dt * followSpeed.current) : 0;
+    desired.normalize().multiplyScalar(step);
+    fall.current = Math.max(-8, fall.current - 14 * dt);
+    let dy = fall.current * dt;
+    if (
+      p.x > RIVER.left &&
+      p.x < RIVER.right &&
+      p.z > RIVER.north &&
+      p.z < RIVER.south &&
+      p.y < RIVER.level + 0.05
+    ) {
+      dy = (RIVER.level - p.y) * Math.min(1, dt * 5);
+      fall.current = 0;
+    }
+    c.computeColliderMovement(
+      b.collider(0),
+      { x: desired.x, y: dy, z: desired.z },
+      rapier.QueryFilterFlags.EXCLUDE_DYNAMIC
+    );
+    const movement = c.computedMovement();
+    b.setNextKinematicTranslation({
+      x: p.x + movement.x,
+      y: p.y + movement.y,
+      z: p.z + movement.z,
+    });
+    if (c.computedGrounded()) fall.current = 0;
+    const travelled = Math.hypot(movement.x, movement.z);
+    companionRuntime.speed = travelled / Math.max(dt, 0.001);
+    companionRuntime.distance += travelled;
+    companionRuntime.position = [p.x, p.y, p.z];
+    blocked.current = moving && travelled < 0.003 ? blocked.current + dt : 0;
+    if (visual.current) {
+      const attacking = Date.now() < companionRuntime.attackUntil;
+      const angle = attacking
+        ? Math.atan2(companionRuntime.target[0] - p.x, companionRuntime.target[2] - p.z)
+        : travelled > 0.001
+          ? Math.atan2(movement.x, movement.z)
+          : visual.current.rotation.y;
+      visual.current.rotation.y +=
+        Math.atan2(
+          Math.sin(angle - visual.current.rotation.y),
+          Math.cos(angle - visual.current.rotation.y)
+        ) * Math.min(1, dt * 10);
     }
   });
   return id && healthy ? (
-    <group ref={ref}>
-      <CreatureModel species={id} moving={command === 'follow'} />
-    </group>
+    <RigidBody
+      ref={body}
+      type="kinematicPosition"
+      colliders={false}
+      enabledRotations={[false, false, false]}
+    >
+      <CapsuleCollider args={[0.16, 0.24]} position={[0, 0.4, 0]} sensor />
+      <group ref={visual}>
+        <CreatureModel species={id} companion />
+      </group>
+    </RigidBody>
   ) : null;
 }
 function Buildings() {
@@ -1100,6 +1210,7 @@ function Scene() {
           </group>
           <MoveMarker />
           <HarvestEffects />
+          <AttackEffects />
           <Companion />
           <Player />
         </Physics>
