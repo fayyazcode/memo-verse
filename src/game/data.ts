@@ -480,6 +480,12 @@ export const OBJECTS: WorldObject[] = [
   { id: 'craft', kind: 'station', name: 'Bruno’s crafting bench', pos: [10, 0, 11] },
   { id: 'heal', kind: 'station', name: 'Companion healing station', pos: [13, 0, -8] },
   { id: 'board', kind: 'station', name: 'Village quest board', pos: [-3, 0, -9] },
+  ...[-3, 0, 3].map((x, i) => ({
+    id: `training${i}`,
+    kind: 'enemy' as const,
+    name: ['Practice sprout', 'Practice stone', 'Practice spark'][i],
+    pos: [x, 0, 14] as Vec3,
+  })),
   { id: 'guardian', kind: 'enemy', name: 'Bramble Guardian', pos: [92, 0, 20] },
 ];
 export const PLOT = { x: -6, z: 19, size: 16, height: 8 };

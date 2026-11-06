@@ -1,4 +1,8 @@
 'use client';
+import { maxCreatureHp } from '@/game/rules';
+import { TRAINING, formation, retreatPosition, squadOf, memberOf } from '@/game/squad';
+import { squadRuntime } from '@/game/squad-runtime';
+import AbilityEffects from './AbilityEffects';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import {
@@ -444,11 +448,36 @@ function ObjectMesh({ id }: { id: string }) {
         s.save.enemyHp > 0 &&
         s.save.flags.includes('repaired')
     );
+  const guardianPosition = useGame((s) =>
+    id === 'guardian' ? s.save.squad?.enemyPosition : undefined
+  );
+  const trainingHp = useGame((s) =>
+    id.startsWith('training') ? s.save.squad?.training[Number(id.slice(-1))] : undefined
+  );
+  const trainingIndex = TRAINING.findIndex((t) => t.id === id);
   const depleted = used > time * 10;
   if (obj.kind === 'landmark') return null;
   return (
-    <group ref={shake} position={obj.pos} userData={{ interactionId: obj.id }}>
-      {obj.item === 'wood' ? (
+    <group
+      ref={shake}
+      position={id === 'guardian' ? (guardianPosition ?? obj.pos) : obj.pos}
+      userData={{ interactionId: obj.id }}
+    >
+      {trainingIndex >= 0 ? (
+        <group>
+          <Box position={[0, 0.7, 0]} size={[0.18, 1.4, 0.18]} color="#8c7659" />
+          <Box
+            position={[0, 1.2, 0]}
+            size={[1.2, 0.65, 0.45]}
+            color={(trainingHp ?? 240) > 0 ? '#b6a66c' : '#77776b'}
+          />
+          <Label
+            text={`${obj.name} · ${Math.ceil(trainingHp ?? 240)} HP`}
+            position={[0, 2, 0]}
+            size={0.28}
+          />
+        </group>
+      ) : obj.item === 'wood' ? (
         <Tree position={[0, 0, 0]} scale={depleted ? 0.75 : 1} />
       ) : obj.item === 'berry' || obj.item === 'fruit' ? (
         <>
@@ -691,6 +720,7 @@ function Player() {
       state = useGame.getState(),
       p = b.translation();
     const profile = cameraProfile(state.settings, mobileRef.current, motion.pitch);
+    const enemyPosition = squadOf(state.save).enemyPosition;
     const cameraYaw = motion.yaw + profile.yawOffset;
     const paused = !state.started || !!state.panel || !!state.dialogue || document.hidden;
     const groundRay = new rapier.Ray({ x: p.x, y: p.y - 0.4, z: p.z }, { x: 0, y: -1, z: 0 });
@@ -765,9 +795,9 @@ function Player() {
       Date.now() < playerRuntime.actionUntil &&
       playerRuntime.action === 'attack' &&
       state.save.flags.includes('repaired') &&
-      Math.hypot(p.x - 92, p.z - 20) < 6
+      Math.hypot(p.x - enemyPosition[0], p.z - enemyPosition[2]) < 6
     )
-      visual.current.rotation.y = Math.atan2(92 - p.x, 20 - p.z);
+      visual.current.rotation.y = Math.atan2(enemyPosition[0] - p.x, enemyPosition[2] - p.z);
     if (visual.current && isMoving) {
       const target = Math.atan2(dir.x, dir.z);
       visual.current.rotation.y +=
@@ -827,7 +857,9 @@ function Player() {
       state.setPosition([p.x, p.y, p.z]);
       const candidates = [
         ...NPCS.map((n) => ({ id: n.id, pos: n.pos, radius: 2.5 })),
-        ...OBJECTS.filter((o) => o.kind !== 'landmark'),
+        ...OBJECTS.filter((o) => o.kind !== 'landmark').map((o) =>
+          o.id === 'guardian' ? { ...o, pos: enemyPosition } : o
+        ),
         ...state.save.blocks
           .filter((b) => b.item === 'lamp')
           .map((b) => ({
@@ -877,10 +909,20 @@ function Player() {
     </RigidBody>
   );
 }
-function Companion() {
-  const id = useGame((s) => s.save.active),
-    command = useGame((s) => s.command),
-    healthy = useGame((s) => (s.save.active ? !!s.save.creatures[s.save.active]?.hp : false));
+function Companions() {
+  const ids = useGame((s) => s.save.squad?.equipped.join(',') ?? s.save.active ?? '');
+  return (
+    <>
+      {(ids ? (ids.split(',') as Species[]) : []).map((id, index) => (
+        <Companion key={id} id={id} index={index} />
+      ))}
+    </>
+  );
+}
+function Companion({ id, index }: { id: Species; index: number }) {
+  const command = useGame((s) => s.save.squad?.order ?? s.command),
+    healthy = useGame((s) => !!s.save.creatures[id]?.hp);
+  const runtime = squadRuntime[id];
   const { world, rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null),
     visual = useRef<THREE.Group>(null),
@@ -895,16 +937,18 @@ function Companion() {
     c.enableSnapToGround(0.45);
     c.setMaxSlopeClimbAngle(Math.PI / 4);
     controller.current = c;
-    const p = useGame.getState().save.position;
-    body.current.setTranslation({ x: p[0] - 1, y: p[1] - 0.74, z: p[2] + 1 }, true);
-    companionRuntime.speed = 0;
-    companionRuntime.distance = 0;
+    const p = formation(useGame.getState().save.position, index);
+    body.current.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
+    runtime.ready = true;
+    runtime.speed = 0;
+    runtime.distance = 0;
     return () => {
+      runtime.ready = false;
       world.removeCharacterController(c);
       controller.current = null;
-      companionRuntime.speed = 0;
+      runtime.speed = 0;
     };
-  }, [id, healthy, world]);
+  }, [id, healthy, world, index, runtime]);
   useFrame((_, rawDt) => {
     const b = body.current,
       c = controller.current;
@@ -914,26 +958,65 @@ function Companion() {
       p = b.translation(),
       player = playerRuntime.position;
     if (s.panel || s.dialogue || !s.started || document.hidden) {
-      companionRuntime.speed = 0;
+      runtime.speed = 0;
       followSpeed.current = 0;
       return;
     }
     const distance = Math.hypot(p.x - player[0], p.z - player[2]);
-    if (distance > 15 || blocked.current > 3) {
-      b.setTranslation({ x: player[0] - 1, y: player[1] + 0.2, z: player[2] + 1 }, true);
+    if (distance > 30 || blocked.current > 3 || p.y < -5) {
+      const spot = formation(player, index);
+      b.setTranslation({ x: spot[0], y: player[1] + 0.2, z: spot[2] }, true);
       blocked.current = 0;
       fall.current = 0;
-      companionRuntime.speed = 0;
+      runtime.speed = 0;
       followSpeed.current = 0;
       return;
     }
-    const desired = new THREE.Vector3(player[0] - 1 - p.x, 0, player[2] + 1 - p.z);
+    const q = squadOf(s.save),
+      cState = s.save.creatures[id]!;
+    const critical = cState.hp <= maxCreatureHp(cState) * 0.2;
+    const enemy = q.target?.startsWith('training')
+      ? TRAINING.find((t) => t.id === q.target)?.pos
+      : s.save.flags.includes('repaired') && !s.save.flags.includes('guardianDefeated')
+        ? q.enemyPosition
+        : undefined;
+    let goal = formation(player, index);
+    if (command === 'retreat' || critical) goal = retreatPosition(player, index, enemy);
+    const engage =
+      enemy &&
+      q.stance !== 'passive' &&
+      command !== 'retreat' &&
+      command !== 'stay' &&
+      !critical &&
+      Math.hypot(enemy[0] - player[0], enemy[2] - player[2]) <=
+        (q.stance === 'aggressive' || command === 'focus' ? 12 : 8);
+    if (engage && enemy) {
+      const away = new THREE.Vector3(player[0] - enemy[0], 0, player[2] - enemy[2]).normalize();
+      const range = id === 'mosshell' || id === 'zaplet' ? 2.4 : 4;
+      goal = [enemy[0] + away.x * range + (index - 1) * 0.5, 0, enemy[2] + away.z * range];
+    }
+    const dashing =
+      id === 'zaplet' &&
+      runtime.elemental &&
+      Date.now() < runtime.attackUntil &&
+      memberOf(s.save, id).cooldowns.Q > 4.5 &&
+      !critical;
+    if (dashing) {
+      const dx = p.x - runtime.target[0],
+        dz = p.z - runtime.target[2],
+        len = Math.hypot(dx, dz) || 1;
+      goal = [runtime.target[0] + (dx / len) * 1.3, p.y, runtime.target[2] + (dz / len) * 1.3];
+    }
+    const desired = new THREE.Vector3(goal[0] - p.x, 0, goal[2] - p.z);
+    const gap = desired.length();
+    const staying = command === 'stay' && distance <= 20;
     const targetSpeed =
-      command === 'follow' && distance > 1.6
-        ? Math.min(distance > 5 ? 6 : 3.5, (distance - 1.5) * 2.4)
+      !staying && gap > 0.25
+        ? Math.min(dashing ? 14 : distance > 5 ? 7 : 4, (gap - 0.2) * (dashing ? 12 : 3))
         : 0;
-    followSpeed.current =
-      command === 'stay' ? 0 : THREE.MathUtils.damp(followSpeed.current, targetSpeed, 7, dt);
+    followSpeed.current = staying
+      ? 0
+      : THREE.MathUtils.damp(followSpeed.current, targetSpeed, 7, dt);
     const moving = followSpeed.current > 0.04;
     const step = moving ? Math.min(desired.length(), dt * followSpeed.current) : 0;
     desired.normalize().multiplyScalar(step);
@@ -962,14 +1045,15 @@ function Companion() {
     });
     if (c.computedGrounded()) fall.current = 0;
     const travelled = Math.hypot(movement.x, movement.z);
-    companionRuntime.speed = travelled / Math.max(dt, 0.001);
-    companionRuntime.distance += travelled;
-    companionRuntime.position = [p.x, p.y, p.z];
+    runtime.speed = travelled / Math.max(dt, 0.001);
+    runtime.distance += travelled;
+    runtime.position = [p.x, p.y, p.z];
+    if (s.save.active === id) Object.assign(companionRuntime, runtime);
     blocked.current = moving && travelled < 0.003 ? blocked.current + dt : 0;
     if (visual.current) {
-      const attacking = Date.now() < companionRuntime.attackUntil;
+      const attacking = Date.now() < runtime.attackUntil;
       const angle = attacking
-        ? Math.atan2(companionRuntime.target[0] - p.x, companionRuntime.target[2] - p.z)
+        ? Math.atan2(runtime.target[0] - p.x, runtime.target[2] - p.z)
         : travelled > 0.001
           ? Math.atan2(movement.x, movement.z)
           : visual.current.rotation.y;
@@ -1121,9 +1205,11 @@ function clickWorld(e: ThreeEvent<PointerEvent>) {
     object = object.parent;
   }
   const target = id
-    ? (NPCS.find((n) => n.id === id)?.pos ??
-      OBJECTS.find((o) => o.id === id)?.pos ??
-      (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
+    ? id === 'guardian'
+      ? squadOf(state.save).enemyPosition
+      : (NPCS.find((n) => n.id === id)?.pos ??
+        OBJECTS.find((o) => o.id === id)?.pos ??
+        (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
     : undefined;
   const ground = e.ray.intersectPlane(new THREE.Plane(UP, 0), new THREE.Vector3());
   const x = target?.[0] ?? ground?.x,
@@ -1240,7 +1326,8 @@ function Scene() {
           <MoveMarker />
           <HarvestEffects />
           <AttackEffects />
-          <Companion />
+          <Companions />
+          <AbilityEffects />
           <Player />
         </Physics>
       </Suspense>

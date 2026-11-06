@@ -71,3 +71,13 @@ Five original hoodie/accessory skins are selectable in Settings and saved as bro
 Added saved Classic/Isometric preferences, a mobile quick toggle and Settings selection. Classic retains its existing distance, pitch, focus and FOV. The supplied reference screenshot guided a true orthographic second camera with a 45° diagonal orientation and approximately 35° elevation. Its world-view size is adjustable independently. Camera-relative movement includes the diagonal offset, raycasting uses the active camera, and vertical touch drags preserve the Classic pitch while Isometric is selected.
 
 The reference website was blocked by the environment proxy; the user supplied the screenshot and selected high overhead/isometric. The implementation follows that visual reference without depending on website access.
+
+## Living World — Phase 0 audit and Phase 1
+
+Audited the existing application and captured the integration map in EXPANSION_PLAN.md. Continued the current Next.js/R3F/Rapier/Zustand/IndexedDB implementation, without a replacement engine or backend. Preserved the original world, NPCs, ten missions, collection, inventory, crafting, construction, camera views and touch controls.
+
+Implemented a three-creature equipped squad, one commanded member, tactical roles/passives, per-creature basic/Q/E/R abilities, level gates, cooldowns, charge, damage/healing/shields, timed areas and a bounded effect queue. Support AI follows stances/orders, defends/heals/shields/uses offensive abilities, retreats at critical HP and reserves ultimates for the player. Extended the existing grounded companion controller to three independent species runtimes, formation following and dash movement. Squad UI and HUD show actual health, roles, cooldowns, charge and collection status. Configurable bindings preserve E/F interaction. Repeatable practice targets enable training and multiple-target ability checks without coins or original mission rewards.
+
+Version-1 saves without squad state derive defaults from the existing active companion, retaining progression and existing cooldowns. Explicit new state is validated; invalid disk records are preserved. Combat uses the existing checkpoint revision queue and quest defeat projection. See SAVE_MIGRATION.md. Broader level-25 progression and every Phase 2+ system remain pending.
+
+Validation is recorded in TESTING.md, including the final browser results and measured software-renderer limitations. Phase 2 has not been started.

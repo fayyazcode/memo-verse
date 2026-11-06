@@ -26,6 +26,11 @@ const craft = (id: ItemId, n = 1) => {
   game().setPosition([10, 1, 11]);
   for (let i = 0; i < n; i++) game().craft(id);
 };
+const summon = (id: Species) => {
+  useGame.setState({ dialogue: null, panel: null });
+  game().tick(2.1);
+  game().summon(id);
+};
 const friend = (id: Species) => {
   const c = CREATURES[id];
   game().setPosition([c.pos[0], 1, c.pos[2]]);
@@ -84,16 +89,16 @@ describe('complete campaign logic integration', () => {
     gather('bush1');
     craft('mineralSnack');
     friend('mosshell');
-    game().summon('aquabub');
+    summon('aquabub');
     target('plant');
-    game().summon('mosshell');
+    summon('mosshell');
     target('toughNode');
     claim('q07');
     accept('q08');
     gather('fragment');
     craft('chargedTreat');
     friend('zaplet');
-    game().summon('zaplet');
+    summon('zaplet');
     target('practiceSwitch');
     claim('q08');
     accept('q09');
@@ -127,9 +132,9 @@ describe('complete campaign logic integration', () => {
     claim('q10');
     accept('q04');
     game().talk('bloop');
-    game().summon('zaplet');
+    summon('zaplet');
     target('finalSwitch');
-    game().summon('mosshell');
+    summon('mosshell');
     target('passage');
     gather('tree6');
     gather('tree7');
@@ -144,10 +149,10 @@ describe('complete campaign logic integration', () => {
     target('repair');
     expect(game().save.flags).toContain('repaired');
     game().setPosition([91, 1, 20]);
-    game().summon('emberfox');
+    summon('emberfox');
     for (let i = 0; i < 12; i++) {
-      useGame.setState((s) => ({ save: { ...s.save, abilityCooldown: 0 } }));
       game().attack(true);
+      game().tick(5.1);
     }
     expect(game().save.flags).toContain('guardianDefeated');
     claim('q04');

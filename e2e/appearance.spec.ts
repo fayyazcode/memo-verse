@@ -49,7 +49,7 @@ test('outfits persist and a companion walks, rests and performs attacks', async 
   );
   await page.getByRole('button', { name: 'Close menu' }).click();
   await page.keyboard.press('KeyQ');
-  await expect(page.getByRole('status')).toContainText('Guardian waits');
+  await expect(page.getByRole('status')).toContainText(/No target within|Fireball/);
   await page.screenshot({ path: '/tmp/momo-starlight-skin.png' });
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();

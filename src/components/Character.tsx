@@ -1,4 +1,5 @@
 'use client';
+import { squadRuntime } from '@/game/squad-runtime';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -207,13 +208,14 @@ export function CreatureModel({
     blend = useRef(0),
     tail = useRef<THREE.Group>(null);
   const c = CREATURES[species];
+  const runtime = squadRuntime[species];
   useFrame(({ clock }, dt) => {
-    const speed = companion ? companionRuntime.speed : moving ? 1.2 : 0;
+    const speed = companion ? runtime.speed : moving ? 1.2 : 0;
     blend.current = THREE.MathUtils.damp(blend.current, speed, 10, Math.min(dt, 0.05));
-    const distance = companion ? companionRuntime.distance : clock.elapsedTime * (moving ? 1.2 : 0);
+    const distance = companion ? runtime.distance : clock.elapsedTime * (moving ? 1.2 : 0);
     const pulse =
-      companion && Date.now() < companionRuntime.attackUntil
-        ? attackPose(Date.now(), companionRuntime.attackStarted)
+      companion && Date.now() < runtime.attackUntil
+        ? attackPose(Date.now(), runtime.attackStarted)
         : 0;
     if (ref.current) {
       ref.current.position.y = 0;

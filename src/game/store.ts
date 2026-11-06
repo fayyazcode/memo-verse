@@ -1,3 +1,22 @@
+import { defaultBindings, validBindings } from './bindings';
+import {
+  ABILITIES,
+  TRAINING,
+  absorb,
+  advanceSquad,
+  cast,
+  equipCreature,
+  memberOf,
+  newSquad,
+  squadOf,
+  switchCreature,
+  validSquad,
+  type Slot,
+  type Squad,
+  type Order,
+  type Stance,
+} from './squad';
+import { combatPositions, showEffects } from './squad-runtime';
 import { craftBatch } from './crafting';
 import { create } from 'zustand';
 import { openDB } from 'idb';
@@ -38,7 +57,8 @@ export type Panel =
   | 'map'
   | 'settings'
   | 'pause'
-  | 'commands';
+  | 'commands'
+  | 'squad';
 export type QuestState = { status: 'active' | 'complete'; progress: Record<string, number> };
 export type Save = {
   version: 1;
@@ -52,6 +72,7 @@ export type Save = {
   quests: Record<string, QuestState>;
   creatures: CreatureCollection;
   active: Species | null;
+  squad?: Squad;
   blocks: Block[];
   discoveries: string[];
   flags: string[];
@@ -95,6 +116,7 @@ export type Settings = {
   skin: SkinId;
   perspective: 'classic' | 'adventure';
   isometricSpan: number;
+  bindings: { squad: string; Q: string; E: string; R: string; previous: string; next: string };
 };
 export const defaultSettings: Settings = {
   music: 0.35,
@@ -107,6 +129,7 @@ export const defaultSettings: Settings = {
   skin: 'meadow',
   perspective: 'classic',
   isometricSpan: 28,
+  bindings: defaultBindings,
 };
 export function validateSave(value: unknown): Save {
   if (!value || typeof value !== 'object') throw Error('Invalid save file.');
@@ -201,6 +224,8 @@ export function validateSave(value: unknown): Save {
     Object.values(s.nodes).some((n) => !Number.isFinite(n) || n < 0)
   )
     throw Error('Invalid saved world.');
+  if (s.squad !== undefined && !validSquad(s, s.squad))
+    throw Error('Invalid saved squad. Your save has been preserved.');
   return s;
 }
 async function database() {
@@ -307,6 +332,13 @@ export type GameStore = {
   craft: (id: ItemId, batches?: number) => void;
   trade: (id: ItemId, buy: boolean) => void;
   summon: (id: Species) => void;
+  equip: (id: Species, equipped: boolean) => void;
+  switchCompanion: (id: Species) => void;
+  cycleCompanion: (direction: number) => void;
+  castAbility: (slot: Slot, target?: string) => void;
+  squadOrder: (order: Order) => void;
+  squadStance: (stance: Stance) => void;
+  recallSquad: () => void;
   feed: (id: Species) => void;
   useAbility: (id: string) => void;
   attack: (elemental?: boolean) => void;
@@ -354,6 +386,8 @@ export const useGame = create<GameStore>((set, get) => ({
           ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
         };
       } catch {}
+      settings.bindings = { ...defaultSettings.bindings, ...settings.bindings };
+      if (!validBindings(settings.bindings)) settings.bindings = { ...defaultBindings };
       if (!['classic', 'adventure'].includes(settings.perspective))
         settings.perspective = 'classic';
       if (!SKINS[settings.skin]) settings.skin = 'meadow';
@@ -369,7 +403,14 @@ export const useGame = create<GameStore>((set, get) => ({
       const existing = await loadData();
       const s = resume ? existing : { ...freshSave(), revision: existing?.revision ?? 0 };
       if (!s) throw Error('No saved adventure found.');
-      set({ save: s, started: true, panel: null, dialogue: null, command: 'follow', build: false });
+      set({
+        save: { ...s, squad: squadOf(s) },
+        started: true,
+        panel: null,
+        dialogue: null,
+        command: 'follow',
+        build: false,
+      });
       sound('friend', get().settings.effects);
       await get().persist();
     } catch (e) {
@@ -463,6 +504,7 @@ export const useGame = create<GameStore>((set, get) => ({
         'befriend',
         id
       );
+      if (!s.active) next = { ...next, squad: { ...squadOf(s), equipped: [id] } };
       set({ save: next });
       get().notify(`${CREATURES[id].name} is your new friend!`);
       sound('friend', get().settings.effects);
@@ -632,14 +674,129 @@ export const useGame = create<GameStore>((set, get) => ({
     sound('click', get().settings.effects);
     void get().persist();
   },
+  equip: (id, equipped) => {
+    const next = equipCreature(get().save, id, equipped);
+    if (typeof next === 'string') {
+      get().notify(next);
+      return;
+    }
+    set({ save: next });
+    void get().persist();
+  },
+  switchCompanion: (id) => {
+    const next = switchCreature(get().save, id);
+    if (typeof next === 'string') {
+      get().notify(next);
+      return;
+    }
+    set({ save: next, command: 'follow' });
+    void get().persist();
+  },
+  cycleCompanion: (direction) => {
+    const s = get().save,
+      ids = squadOf(s).equipped.filter((id) => s.creatures[id]!.hp > 0);
+    if (!ids.length) return;
+    get().switchCompanion(
+      ids[(Math.max(0, ids.indexOf(s.active!)) + direction + ids.length) % ids.length]
+    );
+  },
   summon: (id) => {
-    const s = get().save;
-    if (!s.creatures[id] || s.creatures[id]!.hp <= 0) {
+    let s = get().save;
+    if (!s.creatures[id]?.hp) {
       get().notify('Visit the village healing station first.');
       return;
     }
-    set({ save: { ...s, active: id }, command: 'follow' });
+    // Keep the original collection Summon action useful even with a full squad.
+    if (!squadOf(s).equipped.includes(id)) {
+      if (squadOf(s).equipped.length === 3) {
+        const remove = squadOf(s).equipped.find((c) => c !== s.active) ?? squadOf(s).equipped[2];
+        const result = equipCreature(s, remove, false);
+        if (typeof result === 'string') return;
+        s = result;
+      }
+      const result = equipCreature(s, id, true);
+      if (typeof result === 'string') {
+        get().notify(result);
+        return;
+      }
+      s = result;
+    }
+    const next = switchCreature(s, id);
+    if (typeof next === 'string') {
+      get().notify(next);
+      return;
+    }
+    set({ save: next, command: 'follow' });
     get().notify(`${CREATURES[id].name} is following you.`);
+    void get().persist();
+  },
+  squadOrder: (order) => {
+    const s = get().save,
+      q = squadOf(s);
+    const target =
+      order === 'focus'
+        ? (q.target ?? (get().target?.startsWith('training') ? get().target : 'guardian'))
+        : q.target;
+    set({
+      save: { ...s, squad: { ...q, order, target } },
+      command: order === 'stay' ? 'stay' : 'follow',
+    });
+    void get().persist();
+  },
+  recallSquad: () => {
+    const s = get().save,
+      q = squadOf(s);
+    set({
+      save: { ...s, active: null, squad: { ...q, equipped: [], taunt: null, tauntTime: 0 } },
+      command: 'follow',
+    });
+    void get().persist();
+  },
+  squadStance: (stance) => {
+    const s = get().save;
+    set({ save: { ...s, squad: { ...squadOf(s), stance } } });
+    void get().persist();
+  },
+  castAbility: (slot, target) => {
+    const state = get();
+    if (
+      !state.started ||
+      state.panel ||
+      state.dialogue ||
+      (typeof document !== 'undefined' && document.hidden)
+    )
+      return;
+    const selected =
+      target ??
+      (state.target === 'guardian' || state.target?.startsWith('training')
+        ? state.target
+        : undefined);
+    const result = cast(state.save, state.save.active, slot, selected, combatPositions());
+    if (result.error) {
+      get().notify(result.error);
+      return;
+    }
+    const before = state.save.flags.includes('guardianDefeated');
+    set({
+      save:
+        !before && result.save.flags.includes('guardianDefeated')
+          ? event(result.save, 'defeat', 'guardian')
+          : result.save,
+    });
+    showEffects(result.effects);
+    if (state.save.active) {
+      const fx = result.effects[0];
+      companionRuntime.attackStarted = Date.now();
+      companionRuntime.attackUntil = Date.now() + 650;
+      companionRuntime.elemental = slot !== 'basic';
+      companionRuntime.target = fx.end;
+      get().notify(
+        `${CREATURES[state.save.active].name}: ${ABILITIES[state.save.active][slot].name}`
+      );
+    }
+    if (!before && result.save.flags.includes('guardianDefeated'))
+      get().notify('The Guardian is calm. +80 coins · companion XP');
+    sound('hit', state.settings.effects);
     void get().persist();
   },
   feed: (id) => {
@@ -706,73 +863,18 @@ export const useGame = create<GameStore>((set, get) => ({
     void get().persist();
   },
   attack: (elemental = false) => {
-    const s = get().save;
-    const cooldown = elemental ? s.abilityCooldown : s.attackCooldown;
-    if (cooldown > 0) return;
+    const state = get(),
+      s = state.save;
+    if (state.panel || state.dialogue || (elemental ? s.abilityCooldown : s.attackCooldown) > 0)
+      return;
     playerRuntime.action = 'attack';
     playerRuntime.actionStarted = Date.now();
     playerRuntime.actionUntil = Date.now() + 650;
-    if (s.active && s.creatures[s.active]?.hp && Date.now() >= companionRuntime.attackUntil) {
-      companionRuntime.attackStarted = Date.now();
-      companionRuntime.attackUntil = Date.now() + 650;
-      companionRuntime.elemental = elemental;
-      companionRuntime.target =
-        Math.hypot(s.position[0] - 92, s.position[2] - 20) < 6
-          ? [92, 0, 20]
-          : [
-              s.position[0] + Math.sin(playerRuntime.heading) * 3,
-              s.position[1],
-              s.position[2] + Math.cos(playerRuntime.heading) * 3,
-            ];
-    }
-    if (!s.flags.includes('repaired')) {
-      get().notify('The Guardian waits beyond the repaired passage.');
-      return;
-    }
-    if (s.flags.includes('guardianDefeated')) return;
-    if (Math.hypot(s.position[0] - 92, s.position[2] - 20) > 5) {
-      get().notify('Get within 5 units of the Guardian.');
-      return;
-    }
-    const id = s.active,
-      c = id ? s.creatures[id] : null;
-    if (!id || !c || c.hp <= 0) {
+    if (!s.active || !s.creatures[s.active]?.hp) {
       get().notify('Summon a healthy companion first.');
       return;
     }
-    if ((elemental ? s.abilityCooldown : s.attackCooldown) > 0) return;
-    companionRuntime.attackStarted = Date.now();
-    companionRuntime.attackUntil = Date.now() + 650;
-    companionRuntime.elemental = elemental;
-    const damage = elementalDamage(
-      elemental ? 18 : 10,
-      elemental ? CREATURES[id].type : 'Neutral',
-      'Earth'
-    );
-    const hp = Math.max(0, s.enemyHp - damage);
-    let next: Save = {
-      ...s,
-      enemyHp: hp,
-      attackCooldown: elemental ? s.attackCooldown : 1.5,
-      abilityCooldown: elemental ? 6 : s.abilityCooldown,
-    };
-    if (hp === 0) {
-      next = event(
-        {
-          ...next,
-          flags: [...s.flags, 'guardianDefeated'],
-          coins: s.coins + 80,
-          creatures: { ...s.creatures, [id]: { ...c, xp: c.xp + 120 } },
-        },
-        'defeat',
-        'guardian'
-      );
-      get().notify('The Guardian is calm. +80 coins · +120 companion XP');
-      void 0;
-    }
-    set({ save: next });
-    sound('hit', get().settings.effects);
-    if (hp === 0) void get().persist();
+    get().castAbility(elemental ? 'Q' : 'basic');
   },
   discover: (id) => {
     const s = get().save;
@@ -818,9 +920,30 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   tick: (dt) => {
     const state = get();
-    if (!state.started || state.panel || state.dialogue || document.hidden) return;
-    let s = state.save;
-    const near = Math.hypot(s.position[0] - 92, s.position[2] - 20) < 8;
+    if (
+      !state.started ||
+      state.panel ||
+      state.dialogue ||
+      (typeof document !== 'undefined' && document.hidden)
+    )
+      return;
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    if (dt > 0.2) {
+      const total = Math.min(dt, 3600),
+        time = state.save.playTime;
+      for (let remaining = total; remaining > 1e-8; remaining -= 0.1)
+        get().tick(Math.min(0.1, remaining));
+      set({ save: { ...get().save, playTime: time + total } });
+      return;
+    }
+    const resolved = advanceSquad(state.save, dt, combatPositions());
+    let s = resolved.save;
+    if (!state.save.flags.includes('guardianDefeated') && s.flags.includes('guardianDefeated'))
+      s = event(s, 'defeat', 'guardian');
+    showEffects(resolved.effects);
+    const q = squadOf(s);
+    const near =
+      Math.hypot(s.position[0] - q.enemyPosition[0], s.position[2] - q.enemyPosition[2]) < 8;
     let enemyCooldown = near ? Math.max(0, s.enemyCooldown - dt) : 3;
     let hp = s.hp,
       creatures = s.creatures;
@@ -828,13 +951,34 @@ export const useGame = create<GameStore>((set, get) => ({
       near &&
       s.flags.includes('repaired') &&
       !s.flags.includes('guardianDefeated') &&
-      enemyCooldown === 0
+      enemyCooldown === 0 &&
+      q.stun === 0
     ) {
       enemyCooldown = 3;
-      if (s.active && creatures[s.active] && creatures[s.active]!.hp > 0) {
-        const c = creatures[s.active]!;
-        creatures = { ...creatures, [s.active]: { ...c, hp: Math.max(0, c.hp - 10) } };
-      } else hp = Math.max(0, hp - 12);
+      const tank = q.equipped.find(
+        (id) =>
+          id === 'mosshell' &&
+          creatures[id]!.hp > 0 &&
+          Math.hypot(
+            (combatPositions()[id] ?? s.position)[0] - q.enemyPosition[0],
+            (combatPositions()[id] ?? s.position)[2] - q.enemyPosition[2]
+          ) <= 8
+      );
+      const victim =
+        (q.taunt &&
+        q.tauntTime > 0 &&
+        creatures[q.taunt]?.hp &&
+        Math.hypot(
+          (combatPositions()[q.taunt] ?? s.position)[0] - q.enemyPosition[0],
+          (combatPositions()[q.taunt] ?? s.position)[2] - q.enemyPosition[2]
+        ) <= 8
+          ? q.taunt
+          : null) ??
+        tank ??
+        (s.active && creatures[s.active]?.hp ? s.active : null);
+      absorb(s, victim, victim ? 10 : 12);
+      hp = s.hp;
+      creatures = s.creatures;
     }
     const defeated = hp === 0;
     if (defeated) get().notify('You woke up safely in Momo Village.');
@@ -851,6 +995,15 @@ export const useGame = create<GameStore>((set, get) => ({
         abilityCooldown: Math.max(0, s.abilityCooldown - dt),
       },
     });
+    if (
+      resolved.effects.length ||
+      (near && enemyCooldown === 3 && state.save.enemyCooldown <= dt) ||
+      s.enemyHp !== state.save.enemyHp ||
+      s.hp !== state.save.hp ||
+      q.training.some((v, i) => v !== squadOf(state.save).training[i]) ||
+      q.equipped.some((id) => s.creatures[id]!.hp !== state.save.creatures[id]!.hp)
+    )
+      void get().persist();
   },
   persist: async (quit = false) => {
     const snapshot = structuredClone(get().save);
@@ -884,6 +1037,10 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   configure: (settings) => {
     const next = { ...get().settings, ...settings };
+    if (!validBindings(next.bindings)) {
+      get().notify('Choose unique squad keys. Movement and interaction keys are reserved.');
+      return;
+    }
     set({ settings: next });
     try {
       localStorage.setItem('momo-settings', JSON.stringify(next));

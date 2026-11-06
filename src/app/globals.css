@@ -2860,3 +2860,187 @@ kbd {
   padding: 5px 8px;
   font-size: 8px;
 }
+
+/* Creature squad: compact HUD and existing menu visual language. */
+.squad-slots,
+.squad-orders,
+.squad-hud-members,
+.squad-hud-abilities {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.squad-slots {
+  margin-bottom: 18px;
+}
+.squad-slots > div {
+  flex: 1;
+  min-width: 130px;
+  padding: 15px;
+  background: #edf1df;
+  border: 1px solid #d5dfc5;
+  border-radius: 12px;
+}
+.squad-slots small,
+.squad-hud small {
+  display: block;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.squad-orders {
+  margin: 12px 0;
+}
+.squad-orders [aria-pressed='true'] {
+  background: #71865a;
+  color: #fff9e8;
+}
+.squad-portrait {
+  height: 90px;
+  width: 90px;
+  margin: auto;
+}
+.squad-portrait svg {
+  width: 100%;
+  height: 100%;
+}
+.squad-ability-list {
+  text-align: left;
+  font-size: 12px;
+}
+.squad-ability-list > div {
+  border-top: 1px solid #dbe1cf;
+  padding: 10px 0;
+}
+.squad-ability-list b,
+.squad-ability-list span,
+.squad-ability-list small {
+  display: block;
+  margin: 4px 0;
+}
+.squad-target {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.squad-target select,
+.squad-bindings select {
+  background: #faf7ec;
+  color: #536947;
+  padding: 10px;
+  border: 1px solid #d2dcc5;
+  border-radius: 8px;
+}
+.squad-bindings {
+  margin-bottom: 20px;
+  border: 1px solid #d2dcc5;
+  padding: 16px;
+  border-radius: 12px;
+}
+.squad-bindings p {
+  font-size: 12px;
+}
+.squad-bindings label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  font-size: 12px;
+}
+.squad-hud {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 145px;
+  z-index: 8;
+  max-width: min(560px, 90vw);
+  padding: 8px;
+  background: #f7f5e5e8;
+  border: 1px solid #fff9e7;
+  border-radius: 14px;
+  pointer-events: auto;
+}
+.squad-hud-members,
+.squad-hud-abilities {
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+.squad-hud button {
+  border: 1px solid #d5dfc8;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 11px;
+  background: #eef2df;
+  color: #536b47;
+}
+.squad-hud button[aria-pressed='true'] {
+  background: #d7e4bf;
+  border-color: #879d6a;
+}
+.squad-hud-abilities {
+  margin-top: 6px;
+}
+.squad-hud-abilities button {
+  min-width: 95px;
+}
+.squad-hud-abilities b {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.ultimate-meter {
+  font-size: 10px;
+  display: flex;
+  width: 70px;
+  flex-direction: column;
+  justify-content: center;
+}
+.ultimate-meter progress {
+  width: 100%;
+  accent-color: #839b5e;
+  height: 8px;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .squad-hud {
+    top: calc(225px + env(safe-area-inset-top));
+    bottom: auto;
+    padding: 5px;
+    max-width: calc(100vw - 24px);
+  }
+  .squad-hud button {
+    font-size: 8px;
+    padding: 5px;
+    min-height: 40px;
+  }
+  .squad-hud small {
+    font-size: 8px;
+  }
+  .squad-hud-abilities button {
+    min-width: 75px;
+  }
+  .squad-hud-members > button:first-child {
+    max-width: 50px;
+  }
+  .ultimate-meter {
+    width: 50px;
+    font-size: 8px;
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .squad-hud {
+    top: calc(52px + env(safe-area-inset-top));
+    bottom: auto;
+    max-width: 340px;
+  }
+  .squad-hud-members small {
+    display: none;
+  }
+  .squad-hud-abilities button {
+    min-width: 70px;
+  }
+  .squad-hud button {
+    min-height: 30px;
+  }
+}

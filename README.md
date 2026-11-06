@@ -25,7 +25,7 @@ Start the development server before running browser tests. See [TESTING.md](TEST
 
 Click the ground to move. Click a villager, creature, resource, or station to approach and interact automatically. WASD immediately overrides a click destination. Blocked routes stop with guidance rather than walking through obstacles. The default camera is raised and pulled back for a smaller character and a wider view.
 
-WASD move; Shift sprint; Space jump; hold right mouse to rotate camera. E interacts, F gathers, I opens inventory, J journal, C creatures, M map, V companion commands, B building, Q elemental attack, and Esc pause. Left click attacks the nearby Guardian. In build mode left click places, right click removes, and holding middle mouse rotates the camera. Select hotbar slots with 1–6 or the wheel.
+WASD move; Shift sprint; Space jump; hold right mouse to rotate camera. E interacts, F gathers, I opens inventory, J journal, C creatures, M map, V companion commands, B building, Q first ability, Shift+E second ability, R ultimate, Tab squad management, Z/X companion switching, and Esc pause. Left click attacks the nearby Guardian. In build mode left click places, right click removes, and holding middle mouse rotates the camera. Select hotbar slots with 1–6 or the wheel.
 
 Start with Grandpa Moss, northwest of your spawn. Accept his mission, meet Foxy and Bruno, and return for your reward. The journal records all prerequisites and objectives. Craft at Bruno’s bench. Quest deliveries and reward claims are explicit dialogue actions.
 
@@ -72,3 +72,9 @@ Companions now use collision-aware ground following, smooth acceleration/turning
 The mobile Classic / Isometric button switches between the existing raised follow camera and a high diagonal orthographic camera based on the supplied reference screenshot. Isometric keeps parallel lines, a fixed elevated angle and a smaller player with more surroundings visible. Drag sideways to rotate; joystick movement follows the camera direction and tapping the world still moves or interacts.
 
 Settings → Camera perspective provides the same choice on desktop and mobile. Isometric world view size controls zoom (larger values show more world). The view and zoom are remembered in this browser.
+
+## Living World — Phase 1
+
+Equip up to three collected creatures, command one and let the others assist. The squad menu shows roles, ability unlocks, health, friendship and membership. The HUD shows cooldowns and ultimate charge, with clickable ability controls on mobile. Train against the three practice targets south of the village fountain; they grant creature XP but no coins or original mission rewards. Original utility interactions still use E/F or a click.
+
+The Living World reference is in [docs/LIVING_WORLD_SPEC.md](docs/LIVING_WORLD_SPEC.md). The [integration audit](EXPANSION_PLAN.md), [ability rules](GAME_DESIGN.md) and [save compatibility notes](SAVE_MIGRATION.md) describe this phase. Phase 2 and later expansion systems remain unimplemented.

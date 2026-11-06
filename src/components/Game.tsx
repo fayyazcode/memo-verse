@@ -1,4 +1,7 @@
 'use client';
+import { SquadHud, SquadPanel, AbilityList } from './Squad';
+import { ROLES, squadOf } from '@/game/squad';
+import { BINDING_OPTIONS, bindingLabel, eventBinding } from '@/game/bindings';
 import dynamic from 'next/dynamic';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -70,6 +73,7 @@ const panelNames: Record<NonNullable<Panel>, string> = {
   inventory: 'Your backpack',
   journal: 'Adventure journal',
   creatures: 'Forest friends',
+  squad: 'Creature squad',
   craft: 'The workshop',
   shop: 'Foxy’s little shop',
   map: 'A world to discover',
@@ -492,6 +496,7 @@ function Hud() {
           </button>
         )}
       </aside>
+      <SquadHud />
       <aside className="right-hud">
         <button
           className="hud-collapse-button"
@@ -853,8 +858,12 @@ function Creatures() {
   return (
     <>
       <p className="panel-intro">
-        A good adventure is better with company. One friend can travel by your side.
+        A good adventure is better with company. Equip three friends in your squad and command one
+        directly.
       </p>
+      <button className="secondary" onClick={() => action.open('squad')}>
+        Manage creature squad
+      </button>
       <div className="creature-grid">
         {(Object.entries(CREATURES) as [Species, (typeof CREATURES)[Species]][]).map(([id, c]) => {
           const owned = s.creatures[id],
@@ -866,7 +875,9 @@ function Creatures() {
                 <span className="element-badge">{c.type}</span>
                 {s.active === id && <span className="active-tag">BY YOUR SIDE</span>}
               </div>
-              <h3>{c.name}</h3>
+              <h3>
+                {c.name} · {ROLES[id]}
+              </h3>
               <button
                 className="creature-detail-button"
                 aria-expanded={details === id}
@@ -928,10 +939,7 @@ function Creatures() {
                     <b>Basic attack</b>
                     <span>10 damage · 1.5s cooldown</span>
                   </div>
-                  <div className="card-move">
-                    <b>{c.type} burst</b>
-                    <span>18 base damage · 6s cooldown</span>
-                  </div>
+                  <AbilityList id={id} />
                   <div className="card-utility">
                     <b>Exploration ability</b>
                     <span>{c.ability}</span>
@@ -1169,6 +1177,26 @@ function SettingsPanel() {
           </button>
         </div>
       </fieldset>
+      <fieldset className="squad-bindings">
+        <legend>Squad controls</legend>
+        <p>E/F keep interaction. Shift+E uses the second ability. Choose unique bindings.</p>
+        {(Object.keys(s.bindings) as (keyof typeof s.bindings)[]).map((key) => (
+          <label key={key}>
+            {key}
+            <select
+              aria-label={`${key} squad binding`}
+              value={s.bindings[key]}
+              onChange={(e) => configure({ bindings: { ...s.bindings, [key]: e.target.value } })}
+            >
+              {BINDING_OPTIONS.map((code) => (
+                <option key={code} value={code}>
+                  {bindingLabel(code)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </fieldset>
       <fieldset className="skin-picker">
         <legend>Your outfit</legend>
         <p>Keep your green look. Pick a hoodie and accessory.</p>
@@ -1269,7 +1297,10 @@ function SettingsPanel() {
           Click to move, collect or interact · E interact · F gather · I backpack · J journal · C
           creatures · M map
         </p>
-        <p>B building · V companion commands · Q elemental attack · 1–6 hotbar · Esc pause</p>
+        <p>
+          B building · V companion commands · Tab squad · Q / Shift+E / R abilities · Z/X switch ·
+          1–6 hotbar · Esc pause
+        </p>
         <p>Building: left click place · right click remove · hold middle mouse to look</p>
       </div>
     </>
@@ -1281,6 +1312,9 @@ function Commands() {
   return (
     <>
       <p className="panel-intro">Your friend is always happy to lend a paw.</p>
+      <button className="secondary" onClick={() => useGame.getState().open('squad')}>
+        Squad tactics and abilities
+      </button>
       {s.quests.q03?.status !== 'complete' ? (
         <p className="panel-intro">
           Complete A New Friend with Luna to receive your companion whistle and unlock commands.
@@ -1296,7 +1330,8 @@ function Commands() {
             <button
               className="secondary"
               onClick={() => {
-                useGame.setState({ command: 'follow', panel: null });
+                useGame.getState().squadOrder('follow');
+                useGame.setState({ panel: null });
               }}
             >
               Follow me{command === 'follow' && <Check size={15} />}
@@ -1304,7 +1339,8 @@ function Commands() {
             <button
               className="secondary"
               onClick={() => {
-                useGame.setState({ command: 'stay', panel: null });
+                useGame.getState().squadOrder('stay');
+                useGame.setState({ panel: null });
               }}
             >
               Stay here{command === 'stay' && <Check size={15} />}
@@ -1322,8 +1358,8 @@ function Commands() {
               className="secondary"
               onClick={() => {
                 const state = useGame.getState();
-                useGame.setState({ save: { ...state.save, active: null }, panel: null });
-                void state.persist();
+                if (state.save.active) state.equip(state.save.active, false);
+                useGame.setState({ panel: null });
               }}
             >
               Recall companion
@@ -1382,7 +1418,9 @@ function PanelView() {
           </IconButton>
         </header>
         <div className="panel-body">
-          {panel === 'inventory' ? (
+          {panel === 'squad' ? (
+            <SquadPanel />
+          ) : panel === 'inventory' ? (
             <Inventory />
           ) : panel === 'journal' ? (
             <Journal />
@@ -1500,7 +1538,7 @@ export default function Game() {
       if ((e.target as HTMLElement)?.matches('input,select,textarea')) return;
       const state = useGame.getState();
       if (!state.started) return;
-      if (['Space', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown'].includes(e.code))
+      if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown'].includes(e.code))
         e.preventDefault();
       if (e.repeat) return;
       keys.add(e.code);
@@ -1509,6 +1547,18 @@ export default function Game() {
       if (e.code === 'Escape') {
         if (state.dialogue) useGame.setState({ dialogue: null });
         else state.open(state.panel ? null : 'pause');
+        keys.clear();
+        return;
+      }
+      const binding = eventBinding(e),
+        bindings = state.settings.bindings;
+      if (
+        binding === bindings.squad &&
+        (!state.panel || state.panel === 'squad') &&
+        !state.dialogue
+      ) {
+        e.preventDefault();
+        state.open(state.panel === 'squad' ? null : 'squad');
         keys.clear();
         return;
       }
@@ -1525,8 +1575,18 @@ export default function Game() {
         return;
       }
       if (state.panel || state.dialogue) return;
+      const slot = (['Q', 'E', 'R'] as const).find((slot) => bindings[slot] === binding);
+      if (slot) {
+        e.preventDefault();
+        state.castAbility(slot);
+        return;
+      }
+      if (binding === bindings.previous || binding === bindings.next) {
+        e.preventDefault();
+        state.cycleCompanion(binding === bindings.next ? 1 : -1);
+        return;
+      }
       if (e.code === 'KeyE' || e.code === 'KeyF') state.interact();
-      if (e.code === 'KeyQ') state.attack(true);
       if (e.code === 'KeyB') {
         if (state.save.quests.q02?.status !== 'complete') {
           state.notify('Help Bruno first to unlock building.');

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "format": "prettier --write src tests e2e *.ts *.json"
+    "format": "prettier --write src tests e2e *.ts *.json",
+    "profile:squad": "node scripts/profile-squad.cjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",

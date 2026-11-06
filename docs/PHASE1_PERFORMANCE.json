@@ -1,0 +1,89 @@
+{
+  "renderer": "Chromium SwiftShader software WebGL",
+  "viewport": "1440x900",
+  "quality": "low",
+  "location": "Momo Village [0,1,10], idle, identical camera, 10s warmup and three 5s rAF samples per scenario",
+  "results": [
+    {
+      "scenario": "Baseline 3455c36, one companion",
+      "samples": [
+        {
+          "frames": 19,
+          "seconds": 5.266599999999999,
+          "fps": 3.607640603045609,
+          "medianMs": 283.2999999999993,
+          "p95Ms": 583.2999999999993
+        },
+        {
+          "frames": 16,
+          "seconds": 5.1355,
+          "fps": 3.115568104371531,
+          "medianMs": 299.90000000000146,
+          "p95Ms": 566.7000000000007
+        },
+        {
+          "frames": 17,
+          "seconds": 5.294099999997023,
+          "fps": 3.2111218148522997,
+          "medianMs": 316.6000000000058,
+          "p95Ms": 583.3000000000029
+        }
+      ],
+      "meanFps": 3.3114435074231463
+    },
+    {
+      "scenario": "Phase 1, one companion",
+      "samples": [
+        {
+          "frames": 16,
+          "seconds": 5.213300000008938,
+          "fps": 3.0690733316656567,
+          "medianMs": 316.6999999999971,
+          "p95Ms": 383.3000000000029
+        },
+        {
+          "frames": 14,
+          "seconds": 5.173100000008941,
+          "fps": 2.706307629849762,
+          "medianMs": 350.09999999999854,
+          "p95Ms": 749.9000000000015
+        },
+        {
+          "frames": 12,
+          "seconds": 5.164700000008939,
+          "fps": 2.323465060890125,
+          "medianMs": 449.90000000000146,
+          "p95Ms": 566.7000000000044
+        }
+      ],
+      "meanFps": 2.699615340801848
+    },
+    {
+      "scenario": "Phase 1, three companions",
+      "samples": [
+        {
+          "frames": 16,
+          "seconds": 5.7887999999940405,
+          "fps": 2.7639579878414304,
+          "medianMs": 333.40000000000146,
+          "p95Ms": 900
+        },
+        {
+          "frames": 16,
+          "seconds": 5.06609999999404,
+          "fps": 3.1582479619468278,
+          "medianMs": 316.7000000000007,
+          "p95Ms": 500
+        },
+        {
+          "frames": 17,
+          "seconds": 5.264599999999999,
+          "fps": 3.2291152224290554,
+          "medianMs": 300,
+          "p95Ms": 633.3000000000029
+        }
+      ],
+      "meanFps": 3.0504403907391047
+    }
+  ]
+}

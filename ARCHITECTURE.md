@@ -46,3 +46,15 @@ All current meshes, materials, icons, and sounds are locally generated or suppli
 ## Companion locomotion and appearance
 
 The active companion uses a kinematic Rapier character controller, gravity, snap-to-ground and autostep, with sensor geometry to avoid obstructing the player. Actual corrected travel drives `companionRuntime` speed/distance for articulated foot cycles in `CreatureModel`. `appearance.ts` defines gait/attack poses, outfit palettes and separate mobile zoom selection. Browser settings retain skin and mobile distance without changing the adventure save schema. `AttackEffects` renders transient swings/projectiles while the game store continues validating damage and cooldowns.
+
+## Phase 1 squad integration
+
+`game/squad.ts` defines pure membership, validation, abilities, targeting, shields/damage and bounded support-AI transitions. It takes the existing Save and creature collection and returns the next Save plus transient visual intents. `game/squad-runtime.ts` keeps per-species movement/attack state and a maximum-32 visual queue; it is separate from durable progression. `game/bindings.ts` validates conflict-free additive squad controls.
+
+The existing store routes legacy basic/elemental attack actions and new ability buttons through the same resolver. Its 100ms active-play loop advances cooldowns, timed areas and AI, applies Guardian damage through shields/tank mitigation, and projects the existing defeat event once. Large explicit simulation steps are subdivided; render FPS does not drive ability logic. Combat changes checkpoint through the existing revision queue.
+
+`World` instantiates the existing kinematic companion controller for each equipped healthy species. Formation, threat approach, retreat and dash intentions feed the same collision correction and actual-distance gait. `Character` reads its species runtime, rather than a shared companion animation record. The legacy active-runtime view remains available for existing HUD status. Only training/Guardian meshes subscribe to their new combat state; unrelated resource meshes do not subscribe to every squad tick.
+
+`Squad` supplies a menu, collection ability descriptions, roster/role/health UI and cooldown/charge HUD. `AbilityEffects` uses fixed visual budgets (32 transient effects, 8 areas, 4 shields), with no projectile physics bodies or per-frame React updates. `AttackEffects` preserves the player's original slash; companion projectiles now share the new effect queue.
+
+See SAVE_MIGRATION.md for the additive version-1 adapter. Phase 2 systems remain absent.

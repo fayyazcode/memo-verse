@@ -25,7 +25,13 @@ describe('grounded gait and camera', () => {
 });
 describe('attack animation intent', () => {
   beforeEach(() => {
-    useGame.setState({ save: freshSave(), persist: vi.fn(async () => {}) });
+    useGame.setState({
+      save: freshSave(),
+      started: true,
+      panel: null,
+      dialogue: null,
+      persist: vi.fn(async () => {}),
+    });
     playerRuntime.action = 'idle';
     companionRuntime.attackUntil = 0;
   });

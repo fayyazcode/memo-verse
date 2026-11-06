@@ -53,3 +53,31 @@ Pet/outfit release validation: build and TypeScript pass; all 61 logic tests pas
 Perspective tests preserve Classic parameters and check the orthographic projection, diagonal yaw, fixed elevation and world-view size. The mobile browser scenario toggles views, checks tap-to-move and joystick movement in Isometric, exercises Settings selection, confirms the stored preference after reload and captures both views. Existing mobile input tests run alongside it. Visual comparison uses the user-supplied reference screenshot.
 
 Isometric release validation: production build and TypeScript pass; all 63 logic tests pass. Both existing mobile scenarios and the perspective scenario passed. The final production build passed the expanded perspective scenario, including orthographic tap-to-move, joystick movement, Settings selection, reload persistence and landscape resizing. Portrait and landscape screenshots reviewed. Physical-device performance remains unmeasured.
+
+## Living World Phase 1 validation
+
+Audit baseline: 63 logic tests and TypeScript passed at 3455c36. Phase 1 adds membership, cooldown/charge, targeting, all four species' abilities/passives, area timing, healing/shields, AI survival, original Guardian reward/event, binding and persistence coverage. The logic suite now has **106 passing tests across 10 files**. `npm run typecheck` and `npm run build` pass.
+
+The campaign fixture still completes all ten original missions without debug inventory/rewards. It now waits through real switch/ability cooldowns instead of clearing a legacy cooldown field directly. The animation fixture enters active play. The appearance browser assertion accepts Fireball/target feedback because practice targets are now valid combat targets.
+
+`PLAYWRIGHT_BASE_URL=http://127.0.0.1:3008 npm run test:e2e` passed **17/17 browser scenarios**. This includes the original save/movement/pause/NPC/gather/build/craft/equipment/guidance/river/camera/touch checks and both squad scenarios. After final Guardian targeting/checkpoint corrections, the mouse, perspective and squad files passed **4/4** again. The final survival behavior was checked by logic tests and a final rerun of the squad scenarios (result recorded below).
+
+New browser coverage loads a literal legacy save, equips three friends, checks the fourth-slot restriction, changes the commanded companion, casts actual damage/shield effects, confirms cooldown freezing in menus, saves/reloads while preserving inventory/buildings/quests, cycles using keyboard controls and verifies rebinding. Native mobile touch casts an ultimate, checks consumed charge/cooldown, rotates to landscape, switches to Aquabub and verifies Tidal Wave displaces the Guardian. Screenshots reviewed for the squad screen, three followers/shields, and portrait/landscape HUD.
+
+### Performance qualification
+
+The reproducible profiler is `scripts/profile-squad.cjs` (`npm run profile:squad`). Start the current server; optionally provide an independently built baseline using `MOMO_BASELINE_URL`. Example: `MOMO_BASELINE_URL=http://127.0.0.1:3009 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3008 npm run profile:squad`. The helper closes each browser before the next scenario and cleans up browsers on error.
+
+Measured configuration: Chromium with SwiftShader software WebGL, 1440×900, low quality, idle village at [0,1,10], identical camera, one browser at a time, ten-second warm-up, three five-second requestAnimationFrame samples. Original build was built in a separate checkout at 3455c36. Raw data is retained in docs/PHASE1_PERFORMANCE.json.
+
+| Scenario | Mean observed frame cadence |
+| --- | --- |
+| Original game, one companion | 3.31 FPS |
+| Phase 1, one companion | 2.70 FPS |
+| Phase 1, three companions | 3.05 FPS |
+
+These software-rendered measurements are variable and do not establish physical-device performance or absence of a performance regression. The specification's 30/60 FPS targets remain unvalidated. An earlier profiling attempt mistakenly kept previous browser instances open; those samples were discarded. A separate short frame sample is emitted by the squad browser test for repeatability, not as a hardware benchmark.
+
+Functional Phase 1 tests pass on the available Chromium environment. Edge, Firefox and physical mobile devices have not been tested. Phase 2 has not been started.
+
+Final release checks: after the survival-direction/healing fixes, both squad browser scenarios passed again (**2/2**). The final portrait spacing adjustment then passed the native mobile scenario (**1/1**), including an explicit assertion that the squad HUD clears the existing companion card, real ultimate/push resolution, and landscape access. Final logic suite: **106/106**. Final TypeScript check, production build and diff whitespace check pass. Functional Phase 1 validation is complete on the available environment; hardware performance qualification remains pending and Phase 2 is not started.
