@@ -54,7 +54,8 @@ test('mobile camera perspectives remain available in the side menu and persist',
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await toggle.tap();
   await page.getByRole('button', { name: 'Close menu' }).tap();
-  await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
   await page.getByRole('button', { name: 'Save and quit' }).tap();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
   await page.reload();

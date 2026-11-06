@@ -148,7 +148,7 @@ export type VillagerPose = {
   working: boolean;
   resting: boolean;
 };
-export function villagerPose(id: string, time: number): VillagerPose {
+function scheduledPose(id: string, time: number): VillagerPose {
   const index = NPCS.findIndex((n) => n.id === id),
     n = NPCS[index];
   if (!n) throw new Error(`Unknown villager ${id}`);
@@ -200,4 +200,60 @@ export function villagerPose(id: string, time: number): VillagerPose {
 export function npcPosition(id: string, time: number): Vec3 {
   const p = villagerPose(id, time);
   return p.indoors ? homePoint(id, 3.5) : p.position;
+}
+
+type Visit = { start: number; offset: number; route: Vec3[]; travel: number; total: number };
+const visits = new Map<string, Visit>();
+export function resetVillagerVisits() {
+  visits.clear();
+}
+export function requestVillagerVisit(id: string, time: number): boolean {
+  const current = visits.get(id);
+  if (current && time < current.start + current.total) return false;
+  const pose = villagerPose(id, time);
+  if (!pose.indoors) return false;
+  const route = [
+    [pose.position[0], 0.36, pose.position[2]] as Vec3,
+    homePoint(id, 2.1, 0.36),
+    homePoint(id, 3.5),
+  ];
+  const travel = routeLength(route) / 1.15;
+  visits.set(id, {
+    start: time,
+    offset: current ? current.offset + current.total : 0,
+    route,
+    travel,
+    total: travel * 2 + 40,
+  });
+  return true;
+}
+export function visitStatus(id: string, time: number): 'coming' | 'waiting' | 'returning' | null {
+  const v = visits.get(id);
+  if (!v || time < v.start || time >= v.start + v.total) return null;
+  const age = time - v.start;
+  return age < v.travel ? 'coming' : age < v.travel + 40 ? 'waiting' : 'returning';
+}
+export function villagerPose(id: string, time: number): VillagerPose {
+  const v = visits.get(id);
+  if (!v || time < v.start) return scheduledPose(id, time);
+  if (time >= v.start + v.total) return scheduledPose(id, time - v.offset - v.total);
+  const age = time - v.start,
+    waiting = age >= v.travel && age < v.travel + 40;
+  const returning = age >= v.travel + 40;
+  const pose = along(
+    returning ? [...v.route].reverse() : v.route,
+    (returning ? age - v.travel - 40 : Math.min(age, v.travel)) * 1.15
+  );
+  const door = homePoint(id, 2.1);
+  const indoors =
+    Math.hypot(pose.position[0] - door[0], pose.position[2] - door[2]) < 0.05 ||
+    (returning ? age - v.travel - 40 > 1.5 : age < v.travel - 1.3);
+  return {
+    ...pose,
+    moving: !waiting,
+    working: false,
+    resting: false,
+    indoors,
+    activity: waiting ? 'Ready to talk' : returning ? 'Returning home' : 'Coming outside to talk',
+  };
 }

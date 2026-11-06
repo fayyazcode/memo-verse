@@ -2,6 +2,7 @@
 import { npcPosition, villagerPose } from '@/game/villagers';
 import GameMenu from './GameMenu';
 import Notifications from './Notifications';
+import PlatformBadgeGuard from './PlatformBadgeGuard';
 import { trackedMission, missionProgress, uiScales } from '@/game/ui';
 import { Menu, Pause, Minimize2, Maximize2, Minus } from 'lucide-react';
 import { SquadHud, SquadPanel, AbilityList } from './Squad';
@@ -350,10 +351,9 @@ function Hud() {
     [mapCollapsed, setMapCollapsed] = useState(false);
   useEffect(() => {
     try {
-      const small = matchMedia('(max-width: 900px), (pointer: coarse)').matches;
       const saved = JSON.parse(localStorage.getItem('momo-hud') || 'null');
-      setTasksCollapsed(saved?.tasks ?? small);
-      setMapCollapsed(saved?.map ?? small);
+      setTasksCollapsed(saved?.tasks ?? true);
+      setMapCollapsed(saved?.map ?? true);
     } catch {}
   }, []);
   const collapse = (which: 'tasks' | 'map', value: boolean) => {
@@ -376,6 +376,9 @@ function Hud() {
     target = useGame((s) => s.target),
     open = useGame((s) => s.open),
     saveStatus = useGame((s) => s.saveStatus);
+  const visitor = useGame((g) => g.visitor);
+  const homeTarget =
+    !!target && NPCS.some((n) => n.id === target) && villagerPose(target, s.playTime).indoors;
   const level = levelFromXp(s.xp);
   const tracked = useGame((g) => g.settings.trackedQuest);
   const hudMinimized = useGame((g) => g.settings.hudMinimized);
@@ -513,7 +516,7 @@ function Hud() {
               aria-expanded={!questMinimized}
               onClick={() => useGame.getState().configure({ questMinimized: !questMinimized })}
             >
-              {questMinimized ? <Plus size={20} /> : <Minus size={20} />}
+              {questMinimized ? <ChevronRight size={20} /> : <Minus size={20} />}
             </button>
             {QUESTS.filter((q) => s.quests[q.id]?.status === 'active').length > 1 && (
               <button
@@ -647,6 +650,16 @@ function Hud() {
           </button>
         )}
       </aside>
+      <button
+        id="mission-direction"
+        className="mission-direction"
+        hidden
+        aria-label="Active mission direction"
+        onClick={() => open('journal')}
+      >
+        <ArrowUpRight size={22} />
+        <small />
+      </button>
       <SquadHud />
       <aside className="right-hud">
         <button
@@ -705,7 +718,7 @@ function Hud() {
         </div>
       )}
       {targetName && !panel && (
-        <div className="interaction">
+        <div className="interaction" data-home={homeTarget} data-visiting={!!visitor}>
           <kbd>{OBJECTS.find((o) => o.id === target)?.kind === 'resource' ? 'F' : 'E'}</kbd>
           <div>
             <small>
@@ -716,6 +729,18 @@ function Hud() {
                   : 'INTERACT'}
             </small>
             <strong>{targetName}</strong>
+            {homeTarget || visitor ? (
+              <button
+                className="knock-button"
+                disabled={!!visitor}
+                onClick={() => useGame.getState().interact()}
+                aria-label={
+                  visitor ? 'Villager is coming outside' : `Knock on ${targetName}’s door`
+                }
+              >
+                {visitor ? 'Coming outside…' : 'Knock'}
+              </button>
+            ) : null}
           </div>
         </div>
       )}
@@ -1863,6 +1888,7 @@ export default function Game() {
       data-reduced-motion={settings.reducedMotion}
       style={{ '--ui-scale': String(settings.uiScale / 100) } as React.CSSProperties}
     >
+      <PlatformBadgeGuard />
       <div className="world-container">
         {webgl ? (
           <World />

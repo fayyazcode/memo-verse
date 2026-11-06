@@ -54,7 +54,8 @@ test('mobile joystick, collapsible HUD, touch actions and landscape menus work',
     'aria-pressed',
     'true'
   );
-  await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
   await expect(joystick).toBeHidden();
   await page.getByRole('button', { name: 'Back to the adventure' }).tap();
   await expect(page.getByRole('button', { name: 'Toggle sprint' })).toHaveAttribute(
@@ -77,7 +78,8 @@ test('mobile joystick, collapsible HUD, touch actions and landscape menus work',
     expect(b.x + b.width).toBeLessThanOrEqual(845);
     expect(b.y + b.height).toBeLessThanOrEqual(391);
   }
-  await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
   await page.getByRole('button', { name: 'Save and quit' }).tap();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
   expect(errors).toEqual([]);

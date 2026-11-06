@@ -63,15 +63,7 @@ export function Villager({ id }: { id: string }) {
         </group>
         {!pose.indoors && (
           <>
-            <WorldLabel
-              text={`${n.name} · ${pose.moving ? 'Walking' : 'Working'}`}
-              position={[0, 2.5, 0]}
-              size={0.4}
-            />
-            <mesh position={[0, 3, 0]} rotation={[0, 0, Math.PI / 4]}>
-              <boxGeometry args={[0.17, 0.17, 0.04]} />
-              <meshBasicMaterial color="#f3df9a" />
-            </mesh>
+            <WorldLabel text={n.name} interactionId={id} position={[0, 2.5, 0]} size={0.4} />
           </>
         )}
       </group>

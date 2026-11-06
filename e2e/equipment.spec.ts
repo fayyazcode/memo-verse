@@ -41,8 +41,8 @@ test('selecting tools and food equips them and harvesting still awards once', as
   await page.keyboard.press('Digit5');
   await expect(page.locator('.interaction')).toContainText('Stone deposit', { timeout: 15000 });
   await page.keyboard.press('KeyF');
-  await expect(page.getByRole('status')).toContainText('+3 Stone');
+  await expect(page.getByRole('button', { name: 'Hotbar 2 Stone' })).toContainText('3');
   await page.keyboard.press('KeyF');
-  await expect(page.getByRole('status')).toContainText('Regrowing');
+  await expect(page.locator('.toast')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

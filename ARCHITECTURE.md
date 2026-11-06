@@ -78,3 +78,9 @@ See SAVE_MIGRATION.md for the additive version-1 adapter. Phase 2 systems remain
 Cached four-neighbour village routes avoid the house footprints, tree trunks, fountain, benches, stations and work surfaces. Indoor waypoints use each home's rotated doorway. `Villagers` applies those positions to kinematic bodies, smooths rendered motion, and supplies native labels. `Character` adds independent NPC gait/work poses and job-specific tools; player equipment and attack poses retain their existing implementation. Hollow house walls, opening doors, beds and lit windows represent home/rest states.
 
 Click navigation refreshes moving NPC destinations. Proximity interaction, map markers, mission guidance and Foxy's trade-distance validation use `npcPosition`, which returns the front-door approach when a villager is indoors. Conversations, deliveries and rewards remain available while villagers rest. These routines are cosmetic world activity: they do not produce resources or introduce settlement jobs/economy systems.
+
+## Quiet HUD and doorstep visits
+
+`quiet-hud.css` applies the supplied cream/forest mobile reference without replacing gameplay components. Native labels project only the current nearby interaction target and reserve visible HUD/player space. `WorldLabelLayout` also projects one tracked-mission direction indicator. `importantNotice` filters routine updates, retaining consequential failures/rewards, while inventory and contextual labels communicate ordinary changes. Hosting branding is isolated by `PlatformBadgeGuard` without affecting inventory or menu routes.
+
+`requestVillagerVisit` tracks a temporary doorway route, wait and return. The existing store clock advances the approach; dialogue starts once the resident is outside and the player is close. Repeat knocks are guarded. Temporary visit delay/intent is excluded from saves and reset on adventure start. Global menu/dialogue pause and all quest/reward APIs remain shared.

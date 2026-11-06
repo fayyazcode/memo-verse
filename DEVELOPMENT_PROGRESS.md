@@ -95,3 +95,9 @@ Added remembered whole-status-HUD and individual quest-tracker minimization. Rep
 Replaced the five fixed villagers with daily work/errand/home/rest routines. Grandpa Moss tends plants, Foxy sorts supplies, Bruno hammers timber, Luna studies creatures, and Bloop brews remedies. Added visible workplaces, independent held tools and work poses, walking gaits, door-opening home entry, beds and warm occupied-home windows. Evening departures and morning returns are staggered within the existing twelve-minute active-play day.
 
 Shared positions now drive NPC bodies, click-to-talk navigation, nearby interaction, map markers, mission destinations and trading. Resting villagers can be reached by knocking at their home; dialogue and rewards remain available. Routines resume from the existing saved clock and pause with menus/dialogue. Existing save version, NPC IDs, quests, inventory and companion systems are retained. No settlement production or economy expansion was added.
+
+## Quiet HUD and doorstep conversations
+
+Reworked the phone HUD around the supplied reference: cream status cards/hotbar, forest menu/map controls, and four rounded action petals. Detailed quests, pause and HUD visibility controls are available through on-demand controls and the side menu. The play view shows one mission arrow and only the current nearby object's sharp name. Routine notifications are suppressed; important progression, blocked actions and save failures remain visible. Injected Netlify badge handling is tested locally.
+
+Added an explicit Knock action shared by desktop/mobile interaction and the doorway button. Residents stand, open their door and walk outside before dialogue starts. Repeated knocks cannot restart the approach. Temporary visits return to the original routine and require no save migration.

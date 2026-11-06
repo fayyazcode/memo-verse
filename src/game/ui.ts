@@ -17,7 +17,12 @@ export function missionProgress(save: Save, id: string) {
   return { total, done, next, current: next ? value(next) : 0 };
 }
 export function noticeTone(text: string): 'danger' | 'reward' | 'warning' | 'info' {
-  if (/save conflict|save failed|woke up|defeat|unavailable/i.test(text)) return 'danger';
+  if (
+    /save conflict|save failed|could not be saved|quota|indexeddb|database|invalid save|woke up|defeat|unavailable/i.test(
+      text
+    )
+  )
+    return 'danger';
   if (/mission complete|reward|level up|new friend/i.test(text)) return 'reward';
   if (/need|full|blocked|cooling|unlock|not enough|no target|first/i.test(text)) return 'warning';
   return 'info';
@@ -39,4 +44,13 @@ export function enqueueNotice<T extends { text: string; tone: keyof typeof notif
   return [...queue, item]
     .sort((a, b) => notificationPriority[b.tone] - notificationPriority[a.tone])
     .slice(0, 4);
+}
+
+// Reserve global interruptions for blocked actions, progression and persistence failures.
+export function importantNotice(text: string): boolean {
+  if (/^\+|regrowing|cooling|no target|already.*friend/i.test(text)) return false;
+  return (
+    ['danger', 'warning', 'reward'].includes(noticeTone(text)) ||
+    /treasure|passage.*restored|could not be saved|invalid save/i.test(text)
+  );
 }

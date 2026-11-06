@@ -42,9 +42,9 @@ test('villagers visibly work and move on the map, while menus pause their routin
   await expect(marker).toHaveAttribute('title', /Tending the garden|Checking supplies/);
   const start = await marker.getAttribute('style');
   await expect.poll(() => marker.getAttribute('style'), { timeout: 20000 }).not.toBe(start);
-  await expect(
-    page.locator('.world-label').filter({ hasText: 'Grandpa Moss · Walking' })
-  ).toHaveCount(1, { timeout: 20000 });
+  await expect(page.locator('.world-label').filter({ hasText: /^Grandpa Moss$/ })).toHaveCount(1, {
+    timeout: 20000,
+  });
   await page.getByRole('button', { name: 'Pause game', exact: true }).click();
   const paused = await marker.getAttribute('style');
   await page.waitForTimeout(1200);
@@ -73,12 +73,14 @@ test('nighttime residents remain reachable at home for quest rewards and survive
     /Resting at home/
   );
   await expect(page.locator('.interaction')).toContainText('Grandpa Moss', { timeout: 30000 });
-  await expect(
-    page.locator('.world-label').filter({ hasText: 'Grandpa Moss · Resting · Knock to talk' })
-  ).toHaveCount(1);
+  await expect(page.locator('.world-label').filter({ hasText: /^Grandpa Moss$/ })).toHaveCount(1);
   await page.screenshot({ path: '/tmp/momo-villagers-resting.png' });
-  await page.keyboard.press('KeyE');
-  await expect(page.locator('.dialogue-card')).toContainText('Resting at home');
+  const knock = page.getByRole('button', { name: 'Knock on Grandpa Moss’s door' });
+  await expect(knock).toBeVisible();
+  await knock.click();
+  await expect(page.getByRole('button', { name: 'Villager is coming outside' })).toBeDisabled();
+  await expect(page.locator('.dialogue-card')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.dialogue-card')).toContainText('Ready to talk');
   const claim = page.getByRole('button', { name: /Welcome to MomoVerse.*Collect reward/ });
   await expect(claim).toBeEnabled();
   await claim.click();

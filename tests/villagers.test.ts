@@ -97,3 +97,55 @@ describe('villager daily routines', () => {
     expect(useGame.getState().save.coins).toBe(remote);
   });
 });
+
+describe('knock and doorstep conversations', () => {
+  it('brings a resting villager outside before opening dialogue, then returns them home', async () => {
+    const { resetVillagerVisits, visitStatus } = await import('../src/game/villagers');
+    resetVillagerVisits();
+    const save = freshSave();
+    save.playTime = 600;
+    save.position = homePoint('moss', 3.5);
+    useGame.setState({
+      save,
+      started: true,
+      panel: null,
+      dialogue: null,
+      visitor: null,
+      target: 'moss',
+    });
+    useGame.getState().interact();
+    expect(useGame.getState().visitor).toBe('moss');
+    expect(useGame.getState().dialogue).toBeNull();
+    expect(visitStatus('moss', 600)).toBe('coming');
+    const start = villagerPose('moss', 600).position;
+    useGame.getState().tick(1);
+    expect(villagerPose('moss', 601).position).not.toEqual(start);
+    expect(useGame.getState().dialogue).toBeNull();
+    useGame.getState().tick(5);
+    expect(useGame.getState().dialogue).toBe('moss');
+    expect(useGame.getState().visitor).toBeNull();
+    expect(villagerPose('moss', useGame.getState().save.playTime)).toMatchObject({
+      indoors: false,
+      moving: false,
+    });
+    expect(villagerPose('moss', 660)).toMatchObject({ indoors: true, resting: true });
+    resetVillagerVisits();
+    useGame.setState({ started: false, dialogue: null, visitor: null });
+  });
+  it('ignores remote knocks and duplicate knocks without moving anyone', async () => {
+    const { resetVillagerVisits } = await import('../src/game/villagers');
+    resetVillagerVisits();
+    const save = freshSave();
+    save.playTime = 600;
+    save.position = [0, 1, 0];
+    useGame.setState({ save, visitor: null });
+    useGame.getState().knock('moss');
+    expect(useGame.getState().visitor).toBeNull();
+    useGame.setState({ save: { ...save, position: homePoint('moss', 3.5) } });
+    useGame.getState().knock('moss');
+    useGame.getState().knock('moss');
+    expect(useGame.getState().visitor).toBe('moss');
+    resetVillagerVisits();
+    useGame.setState({ visitor: null });
+  });
+});

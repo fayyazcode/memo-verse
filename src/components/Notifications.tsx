@@ -2,7 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Sparkles, TriangleAlert, Check } from 'lucide-react';
 import { useGame } from '@/game/store';
-import { noticeTone, combinePickup, enqueueNotice, notificationPriority } from '@/game/ui';
+import {
+  noticeTone,
+  combinePickup,
+  enqueueNotice,
+  notificationPriority,
+  importantNotice,
+} from '@/game/ui';
 type Item = { text: string; tone: ReturnType<typeof noticeTone>; time: number };
 const priority = notificationPriority;
 export default function Notifications() {
@@ -19,15 +25,16 @@ export default function Notifications() {
     if (item)
       timer.current = setTimeout(
         () => show(queue.current.shift() ?? null),
-        item.tone === 'danger' ? 6000 : item.tone === 'reward' ? 4000 : 2800
+        item.tone === 'danger' ? 5000 : 3000
       );
   };
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || !importantNotice(notice)) return;
+    if (current.current?.text === notice && Date.now() - current.current.time < 6000) return;
     const item: Item = { text: notice, tone: noticeTone(notice), time: Date.now() },
       old = current.current;
     if (old && priority[old.tone] > priority[item.tone]) {
-      queue.current = enqueueNotice(queue.current, item);
+      queue.current = enqueueNotice(queue.current, item).slice(0, 1);
       return;
     }
     const combined =

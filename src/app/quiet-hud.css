@@ -1,0 +1,442 @@
+/* A quiet play surface; menus retain the detailed controls and mission journal. */
+.mission-direction {
+  position: absolute;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #fff3bc;
+  border-radius: 50%;
+  background: #244b3cee;
+  color: #ffe194;
+  box-shadow: 0 2px 8px #203b3033;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.mission-direction[hidden] {
+  display: none;
+}
+.mission-direction svg {
+  transform: rotate(calc(var(--direction, 0rad) - 0.785398rad));
+}
+.mission-direction small {
+  position: absolute;
+  top: 35px;
+  color: #fff9e9;
+  background: #234535e8;
+  border-radius: 10px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+.world-label {
+  border-radius: 14px;
+  border: 1px solid #fff4d5;
+  background: #183d30f5;
+  padding: 6px 12px;
+  max-width: min(240px, calc(100vw - 24px));
+  color: #fffbed;
+  font-size: 15px;
+  box-shadow: 0 2px 8px #1f392d22;
+}
+.toast {
+  max-width: min(360px, calc(100vw - 32px));
+  font-size: 14px;
+}
+netlify-badge,
+#netlify-badge,
+.netlify-badge,
+[data-netlify-badge],
+a[aria-label='Powered by Netlify'],
+iframe[title='Netlify Badge'] {
+  display: none !important;
+}
+.action-sprout {
+  display: none;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .game-top .brand {
+    border: 1px solid #f5f0d2;
+    border-radius: 16px;
+    background: #214333ee;
+    min-width: 88px;
+    height: 44px;
+  }
+  .game-top .brand-mark {
+    color: #f9f1d9;
+  }
+  .game-top .brand .menu-word {
+    font-size: 16px;
+  }
+  .top-actions {
+    position: absolute;
+    right: 104px;
+    top: 0;
+    gap: 2px;
+  }
+  .top-actions .icon-button {
+    width: 36px;
+    height: 44px;
+    min-width: 36px;
+    background: #244335a8;
+    border: 1px solid #fff4da66;
+    border-radius: 13px;
+  }
+  .top-actions .icon-button svg {
+    width: 16px;
+    height: 16px;
+  }
+  .left-hud {
+    top: calc(66px + env(safe-area-inset-top));
+    width: clamp(188px, 56vw, 228px);
+  }
+  .player-card {
+    min-height: 64px;
+    padding: 8px 10px;
+    border-radius: 17px;
+    border: 1px solid #fff9e4;
+    background: #fffbedee;
+    box-shadow: 0 3px 12px #3b4c1d12;
+  }
+  .portrait {
+    width: 38px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .player-detail > div > b {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .player-detail > div > span {
+    font-size: 10px;
+  }
+  .player-stats {
+    font-size: 12px;
+  }
+  .health-bar {
+    height: 7px;
+    margin: 5px 0;
+  }
+  .xp-bar {
+    display: none;
+  }
+  .squad-hud {
+    top: calc(138px + env(safe-area-inset-top));
+    width: clamp(188px, 56vw, 228px);
+    max-width: 228px;
+  }
+  .companion-summary {
+    height: 44px;
+    border-radius: 16px !important;
+    background: #fffbeded !important;
+    color: #244333 !important;
+    border: 1px solid #fff9e4 !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 3px 12px #3b4c1d12;
+  }
+  .companion-summary b {
+    font-size: 14px;
+  }
+  .companion-summary b small {
+    color: #687560;
+    font-size: 11px;
+  }
+  .companion-summary > span > span {
+    color: #415b44;
+    font-size: 12px;
+  }
+  .companion-summary-portrait {
+    width: 32px;
+    height: 32px;
+  }
+  .tracked-mission,
+  .hud-collapse-row {
+    top: 124px;
+  }
+  .tracked-mission[data-minimized='true'] {
+    width: 150px;
+    border-radius: 18px;
+    min-height: 44px;
+    background: #244535ed;
+    border: 1px solid #fff3c6;
+  }
+  .tracked-mission[data-minimized='true'] .quest-state {
+    font-size: 13px;
+  }
+  .mission-minimize {
+    background: transparent;
+    border-radius: 16px;
+  }
+  .quest-card {
+    top: 178px;
+  }
+  .hud-collapse-button {
+    border-radius: 16px;
+    border: 1px solid #fff3d5;
+    background: #234735ed;
+  }
+  .right-hud {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    gap: 10px;
+  }
+  .right-hud > .hud-collapse-button {
+    min-width: 92px;
+    justify-content: center;
+    height: 44px;
+    font-size: 15px;
+  }
+  .right-hud > .hud-collapse-button > span {
+    display: none;
+  }
+  .right-hud .coin-pill {
+    min-height: 40px;
+    padding: 5px 12px;
+    gap: 8px;
+    border: 1px solid #fff7d8;
+    background: #fff0cbee;
+    border-radius: 17px;
+  }
+  .coin-pill b {
+    font-size: 21px;
+    color: #354833;
+  }
+  .coin-pill .coin-icon {
+    width: 25px;
+    height: 25px;
+    background: none;
+  }
+  .interaction {
+    display: none;
+  } /* The single nearby name is anchored to the object. */
+  .game-bottom {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 10px;
+    right: 10px;
+  }
+  .hotbar {
+    background: #fff8e4ee;
+    padding: 7px;
+    gap: 4px;
+    border: 1px solid #fffef4;
+    border-radius: 23px;
+    box-shadow: 0 5px 14px #283f2b33;
+  }
+  .hotbar-slot {
+    background: #faf5e2;
+    border: 1px solid #d4d5b5;
+    border-radius: 14px;
+    width: clamp(42px, 11vw, 52px);
+    min-width: 42px;
+    height: 48px;
+  }
+  .hotbar-slot.selected {
+    background: #e3ecc9;
+    border-color: #799a58;
+    box-shadow: inset 0 0 0 2px #a7be80;
+  }
+  .hotbar-slot > span {
+    font-size: 24px;
+  }
+  .hotbar-slot > b {
+    font-size: 13px;
+    right: 5px;
+    bottom: 3px;
+    color: #25412d;
+  }
+  .virtual-joystick {
+    width: clamp(108px, 31vw, 144px);
+    height: clamp(108px, 31vw, 144px);
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    background: #e9e0b333;
+    border: 2px solid #fff6d2c9;
+    box-shadow: inset 0 0 22px #ebe2bb22;
+  }
+  .joystick-ring {
+    border-color: #fff5d0a3;
+  }
+  .joystick-knob {
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle at 35% 25%, #fffff6, #f3eacb);
+    border: 1px solid #fffbea;
+    box-shadow: 0 4px 10px #3e442126;
+  }
+  .virtual-joystick > small {
+    display: none;
+  }
+  .touch-utilities {
+    bottom: calc(100px + clamp(108px, 31vw, 144px) + env(safe-area-inset-bottom));
+  }
+  .touch-utilities button {
+    background: #234e38ee;
+    border: 1px solid #fff6da;
+    border-radius: 20px;
+    min-height: 40px;
+    padding: 6px 13px;
+    box-shadow: 0 3px 8px #29432c22;
+  }
+  .touch-actions {
+    --action-size: clamp(64px, 19vw, 86px);
+    grid-template-columns: repeat(2, var(--action-size));
+    gap: 3px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    right: max(12px, env(safe-area-inset-right));
+    filter: drop-shadow(0 4px 6px #2b49242e);
+  }
+  .touch-actions button {
+    width: var(--action-size);
+    height: var(--action-size);
+    min-height: 44px;
+    color: #fff9e6;
+    gap: 3px;
+    border: 2px solid #fff5da;
+    box-shadow: inset 0 2px 8px #ffffff22;
+  }
+  .touch-actions .touch-attack {
+    background: radial-gradient(ellipse at 30% 20%, #d98d6c, #a95148);
+    border-color: #fff3d7;
+    border-radius: 65% 65% 24% 65%;
+  }
+  .touch-actions .touch-ability {
+    background: radial-gradient(ellipse at 70% 20%, #569ab5, #235e7a);
+    border-color: #fff3d7;
+    border-radius: 65% 65% 65% 24%;
+  }
+  .touch-actions .touch-interact {
+    background: radial-gradient(ellipse at 30% 80%, #84af65, #477c48);
+    border-color: #fff3d7;
+    border-radius: 65% 24% 65% 65%;
+  }
+  .touch-actions .touch-interact[data-available='true'] {
+    box-shadow: inset 0 0 0 2px #f5f3bc;
+  }
+  .touch-actions .touch-jump {
+    background: radial-gradient(ellipse at 70% 80%, #3d7754, #1d4936);
+    border-color: #fff3d7;
+    border-radius: 24% 65% 65% 65%;
+  }
+  .touch-actions small,
+  .touch-actions .touch-interact small {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .touch-actions svg {
+    width: 25px;
+    height: 25px;
+    stroke-width: 2;
+  }
+  .touch-actions button:active {
+    transform: scale(0.94);
+    filter: brightness(1.12);
+  }
+  .touch-actions .action-sprout {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #fbf3d9;
+    color: #8caf56;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .touch-controls[data-building='true'] .touch-actions button {
+    border-radius: 20px;
+  }
+  .toast {
+    top: auto;
+    bottom: calc(255px + env(safe-area-inset-bottom));
+    padding: 8px 12px;
+    min-height: 36px;
+    border-radius: 15px;
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .left-hud {
+    top: 60px;
+  }
+  .player-card {
+    min-height: 56px;
+  }
+  .squad-hud {
+    top: 122px;
+  }
+  .tracked-mission,
+  .hud-collapse-row {
+    top: 112px;
+  }
+  .touch-actions {
+    --action-size: 56px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+  .virtual-joystick {
+    width: 96px;
+    height: 96px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .touch-utilities {
+    left: 122px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .hotbar-slot {
+    height: 44px;
+  }
+}
+
+.summary-charge {
+  font-style: normal;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .summary-charge {
+    display: none;
+  }
+}
+.knock-button {
+  min-height: 44px;
+  border: 1px solid #e8dca2;
+  border-radius: 14px;
+  color: #fff8de;
+  background: #315c40;
+  padding: 6px 14px;
+  margin-left: 10px;
+  font-size: 14px;
+}
+.interaction[data-home='true'] > div,
+.interaction[data-visiting='true'] > div {
+  display: flex;
+  align-items: center;
+}
+.interaction[data-home='true'] small,
+.interaction[data-visiting='true'] small {
+  display: none;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .interaction[data-home='true'],
+  .interaction[data-visiting='true'] {
+    display: flex;
+    bottom: calc(250px + env(safe-area-inset-bottom));
+    border-radius: 18px;
+  }
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .right-hud {
+    width: 92px;
+  }
+  .right-hud .coin-pill {
+    top: calc(64px + env(safe-area-inset-top));
+  }
+  .right-hud:has(.minimap:not([hidden])) {
+    width: 140px;
+  }
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  .game-top .top-actions {
+    display: none;
+  }
+}

@@ -1,4 +1,10 @@
-import { npcPosition } from './villagers';
+import {
+  npcPosition,
+  villagerPose,
+  requestVillagerVisit,
+  visitStatus,
+  resetVillagerVisits,
+} from './villagers';
 import { defaultBindings, validBindings } from './bindings';
 import {
   ABILITIES,
@@ -122,6 +128,7 @@ export type Settings = {
   trackedQuest: string | null;
   hudMinimized: boolean;
   questMinimized: boolean;
+  hudStyleVersion: number;
   bindings: { squad: string; Q: string; E: string; R: string; previous: string; next: string };
 };
 export const defaultSettings: Settings = {
@@ -138,7 +145,8 @@ export const defaultSettings: Settings = {
   uiScale: 115,
   trackedQuest: null,
   hudMinimized: false,
-  questMinimized: false,
+  questMinimized: true,
+  hudStyleVersion: 2,
   bindings: defaultBindings,
 };
 export function validateSave(value: unknown): Save {
@@ -351,6 +359,8 @@ export type GameStore = {
   notify: (s: string) => void;
   open: (panel: Panel) => void;
   talk: (id: string) => void;
+  knock: (id: string) => void;
+  visitor: string | null;
   accept: (id: string) => void;
   claim: (id: string) => void;
   interact: () => void;
@@ -384,6 +394,7 @@ export const useGame = create<GameStore>((set, get) => ({
   hasSave: false,
   panel: null,
   dialogue: null,
+  visitor: null,
   target: null,
   notice: '',
   noticeId: 0,
@@ -408,10 +419,13 @@ export const useGame = create<GameStore>((set, get) => ({
             : defaultSettings.quality,
       };
       try {
-        settings = {
-          ...settings,
-          ...JSON.parse(localStorage.getItem('momo-settings') || '{}'),
-        };
+        const stored = JSON.parse(localStorage.getItem('momo-settings') || '{}');
+        settings = { ...settings, ...stored };
+        if (stored.hudStyleVersion !== 2) {
+          settings.questMinimized = true;
+          settings.hudStyleVersion = 2;
+          localStorage.setItem('momo-settings', JSON.stringify(settings));
+        }
       } catch {}
       settings.bindings = { ...defaultSettings.bindings, ...settings.bindings };
       settings.hudMinimized = settings.hudMinimized === true;
@@ -427,10 +441,12 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ hasSave: !!saved, loading: false, settings });
     } catch (e) {
       set({ loading: false, saveStatus: 'Save unavailable' });
-      get().notify((e as Error).message);
+      get().notify('Save unavailable: ' + (e as Error).message);
     }
   },
   start: async (resume) => {
+    resetVillagerVisits();
+    set({ visitor: null });
     try {
       const existing = await loadData();
       const s = resume ? existing : { ...freshSave(), revision: existing?.revision ?? 0 };
@@ -446,21 +462,42 @@ export const useGame = create<GameStore>((set, get) => ({
       sound('friend', get().settings.effects);
       await get().persist();
     } catch (e) {
-      get().notify((e as Error).message);
+      get().notify('Save unavailable: ' + (e as Error).message);
     }
   },
-  reset: () =>
-    set({ save: freshSave(), started: false, panel: null, dialogue: null, build: false }),
+  reset: () => {
+    resetVillagerVisits();
+    set({
+      save: freshSave(),
+      started: false,
+      panel: null,
+      dialogue: null,
+      visitor: null,
+      build: false,
+    });
+  },
   setPosition: (position) => set({ save: { ...get().save, position } }),
   open: (panel) => {
     set({ panel, dialogue: null, abilityTrayOpen: false });
     sound('click', get().settings.effects);
   },
+  knock: (id) => {
+    if (!NPCS.some((n) => n.id === id)) return;
+    const s = get().save,
+      door = npcPosition(id, s.playTime);
+    if (get().visitor || Math.hypot(s.position[0] - door[0], s.position[2] - door[2]) > 3.5) return;
+    if (requestVillagerVisit(id, s.playTime)) {
+      set({ visitor: id, build: false });
+      playerRuntime.action = 'interact';
+      playerRuntime.actionUntil = Date.now() + 800;
+      sound('click', get().settings.effects);
+    }
+  },
   talk: (id) => {
     playerRuntime.action = 'interact';
     playerRuntime.actionUntil = Date.now() + 800;
     const s = event(get().save, 'talk', id);
-    set({ dialogue: id, panel: null, save: s, build: false });
+    set({ dialogue: id, panel: null, save: s, build: false, visitor: null });
     // Deliveries are explicit conversation actions, never silently consume resources.
   },
   accept: (id) => {
@@ -507,7 +544,9 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     const npc = NPCS.find((n) => n.id === target);
     if (npc) {
-      get().talk(npc.id);
+      if (get().visitor === npc.id) return;
+      if (villagerPose(npc.id, s.playTime).indoors) get().knock(npc.id);
+      else get().talk(npc.id);
       return;
     }
     if (target.startsWith('creature:')) {
@@ -1038,6 +1077,18 @@ export const useGame = create<GameStore>((set, get) => ({
         abilityCooldown: Math.max(0, s.abilityCooldown - dt),
       },
     });
+    const visitor = get().visitor;
+    if (visitor) {
+      const now = get().save,
+        status = visitStatus(visitor, now.playTime),
+        pos = npcPosition(visitor, now.playTime);
+      if (
+        status === 'waiting' &&
+        Math.hypot(now.position[0] - pos[0], now.position[2] - pos[2]) < 3.5
+      )
+        get().talk(visitor);
+      else if (!status || status === 'returning') set({ visitor: null });
+    }
     if (
       resolved.effects.length ||
       (near && enemyCooldown === 3 && state.save.enemyCooldown <= dt) ||
@@ -1075,7 +1126,7 @@ export const useGame = create<GameStore>((set, get) => ({
       });
     } catch (e) {
       set({ saveStatus: 'Save failed' });
-      get().notify((e as Error).message);
+      get().notify('Save failed: ' + (e as Error).message);
     }
   },
   configure: (settings) => {

@@ -27,3 +27,15 @@ Source reference: docs/UI_UX_SPEC.md. Actual validation and remaining limits are
 The arrows button beside Pause hides/restores the player, companion, quest and minimap status panels while keeping movement, actions and hotbar usable. The minus/plus on the tracked mission independently switches it to a 44px quest chip. These are browser preferences (`hudMinimized`, `questMinimized`), remembered across reloads. The companion ability tray still opens from the touch controls when the status HUD is hidden.
 
 World names no longer use tiny canvas-texture sprites. `WorldLabels` anchors native 14–18px browser text to projected 3D positions, independent of WebGL resolution and camera zoom. Positions are rounded to CSS pixels, and nearby labels wrap/reposition to avoid each other and the player. The renderer bounds label count/distance, hides offscreen/menu labels, updates positions without React frame state, and removes nodes on unmount. Labels ignore pointer input so object/world interactions remain available underneath.
+
+## Quiet play surface and mobile reference
+
+The default quest tracker is a compact chip, with details available on demand. Map/task sections start collapsed unless the player explicitly saved their expansion. Existing browser preferences receive a one-time HUD style migration; adventure saves remain unchanged.
+
+World names appear only for the current nearby interaction target. NPC work/rest text, distant practice-target HP labels and generic scenery names do not fill the world view. Native browser text stays sharp, and placement reserves the player and visible HUD areas. One direction arrow and distance point toward the tracked mission; it hides at the destination and while menus/dialogue are open.
+
+Routine pickups, selections, crafting confirmations, regrowth, no-target and cooldown notices are quiet. Inventory/material counts and contextual states provide feedback. Blocked actions, save failures, major rewards and new companions still show a short, deduplicated notice. Mobile controls use four rounded, cream-edged petals with distinct attack/ability/gather/jump colours, a central sprout, and a soft joystick. Player/companion cards and the hotbar use the supplied cream-and-forest reference palette.
+
+`PlatformBadgeGuard` handles known Netlify badge elements and injected branding links/frames, including small wrapper/shadow containers, so they do not cover the hotbar. The local browser suite injects branding deliberately to test this; it does not verify the live Netlify deployment.
+
+Resting residents now have an explicit Knock button at their doorway. E and the mobile context button use the same action. The villager stands up, walks through the door, and begins dialogue outside once the player is nearby. Repeat knocks are disabled during the approach. Conversation pauses the world clock; afterwards the resident waits briefly and returns indoors. Door visits are transient and do not add save fields or rewards.

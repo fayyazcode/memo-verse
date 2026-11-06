@@ -48,3 +48,27 @@ it('keeps pending rewards ahead of routine messages in a bounded queue', () => {
   expect(queue).toHaveLength(4);
   expect(queue[0]).toEqual(reward);
 });
+
+describe('quiet play notifications', () => {
+  it('keeps routine activity quiet and preserves consequential feedback', async () => {
+    const { importantNotice } = await import('../src/game/ui');
+    for (const message of [
+      '+4 Wood',
+      'Crafted 12 Wooden block',
+      'Holding a cookie',
+      'Regrowing — 10 seconds',
+      'No target in range',
+      'Ability cooling down',
+    ])
+      expect(importantNotice(message)).toBe(false);
+    for (const message of [
+      'Save conflict: another tab saved',
+      'Your bag is full.',
+      'You need a basic pickaxe.',
+      'Mission complete! +80 coins',
+      'Emberfox is your new friend!',
+      'Settings could not be saved in this browser.',
+    ])
+      expect(importantNotice(message)).toBe(true);
+  });
+});

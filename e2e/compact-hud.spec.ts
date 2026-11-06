@@ -40,7 +40,7 @@ async function saved(page: Page): Promise<Save> {
 }
 function oldSave() {
   const s = freshSave();
-  s.position = [0, 1, 10];
+  s.position = [0, 1, 12.5];
   s.active = 'zaplet';
   s.creatures.zaplet = { xp: 300, hp: 65, friendship: 30 };
   s.flags = ['chest'];
@@ -58,11 +58,10 @@ test('quest and full HUD minimize independently, restore after reload, and objec
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await seed(page, oldSave());
-  await expect(page.getByRole('button', { name: 'Open tracked mission' })).toContainText(
-    'REWARD READY'
-  );
+  await expect(page.getByRole('button', { name: 'Open tracked mission' })).toContainText('REWARD');
   expect((await saved(page)).quests.q10.progress.chest).toBe(1);
   const tracker = page.locator('.tracked-mission');
+  await page.getByRole('button', { name: 'Expand mission tracker' }).tap();
   const height = (await tracker.boundingBox())!.height;
   await page.getByRole('button', { name: 'Minimize mission tracker' }).tap();
   expect((await tracker.boundingBox())!.height).toBeLessThan(height);
@@ -72,7 +71,8 @@ test('quest and full HUD minimize independently, restore after reload, and objec
     'Hidden Forest Secrets'
   );
   await page.getByRole('button', { name: 'Minimize mission tracker' }).tap();
-  await page.getByRole('button', { name: 'Minimize HUD' }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Hide status panels' }).tap();
   await expect(page.locator('.left-hud')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Toggle companion abilities' })).toBeHidden();
   await expect(page.getByRole('group', { name: 'Movement joystick' })).toBeVisible();
@@ -98,14 +98,18 @@ test('quest and full HUD minimize independently, restore after reload, and objec
     await label.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   ).toBeGreaterThanOrEqual(14);
   await page.screenshot({ path: '/tmp/momo-sharp-labels-isometric.png' });
-  await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
   await page.getByRole('button', { name: 'Save and quit' }).tap();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).tap();
-  await expect(page.getByRole('button', { name: 'Show HUD' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await expect(page.getByRole('button', { name: 'Show status panels' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close menu' }).tap();
   await expect(page.locator('.left-hud')).toBeHidden();
-  await page.getByRole('button', { name: 'Show HUD' }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Show status panels' }).tap();
   await expect(page.getByRole('button', { name: 'Expand mission tracker' })).toBeVisible();
   await page.screenshot({ path: '/tmp/momo-compact-quest.png' });
   expect(errors).toEqual([]);
@@ -124,7 +128,8 @@ test('an already-opened forest secret can be claimed once from the original NPC'
   await claim.tap();
   await expect(claim).toHaveCount(0);
   await page.getByRole('button', { name: 'See you around' }).tap();
-  await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+  await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
   await page.getByRole('button', { name: 'Save and quit' }).tap();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
   const result = await saved(page);

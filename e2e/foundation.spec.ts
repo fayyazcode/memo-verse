@@ -108,7 +108,7 @@ test('NPC interaction accepts a real mission and journal survives reload', async
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
   await expect(page.getByText('Little Wanderer')).toBeVisible();
-  await page.getByRole('button', { name: 'Open journal', exact: true }).click();
+  await page.getByRole('button', { name: 'Open tracked mission', exact: true }).click();
   await expect(page.locator('.journal-quest').first()).toContainText('ACTIVE');
 });
 test('gathering consumes a node once and persists the actual items', async ({ page }) => {
@@ -134,9 +134,9 @@ test('gathering consumes a node once and persists the actual items', async ({ pa
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
   await expect(page.locator('.interaction')).toContainText('Willow tree', { timeout: 30000 });
   await page.keyboard.press('KeyF');
-  await expect(page.getByRole('status')).toContainText('+4 Wood');
+  await expect(page.getByRole('button', { name: 'Hotbar 1 Wood' })).toContainText('4');
   await page.keyboard.press('KeyF');
-  await expect(page.getByRole('status')).toContainText('Regrowing');
+  await expect(page.locator('.toast')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pause game' }).click();
   await page.getByRole('button', { name: 'Save and quit' }).click();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();

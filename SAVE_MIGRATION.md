@@ -19,3 +19,7 @@ Version-1 saves may already contain the durable `chest` flag while the active Hi
 ## Villager routines
 
 Villager activity is derived from the existing active-play `playTime`. There are no new save fields or storage changes. Loading an old adventure immediately reconstructs each villager's work, commute or rest state; menus/dialogue and time spent away do not advance the routine. NPC identifiers, dialogue/quest state, rewards, inventory and trades retain their original save representation.
+
+## Quiet HUD and doorstep visits
+
+Browser settings use `hudStyleVersion: 2` to adopt a compact mission tracker once. Players can expand it again and retain their choice. Adventure saves stay at version 1. Knock visits and their brief routine delays are transient; loading reconstructs the normal saved-time routine. Conversations and quest rewards keep their existing IDs and persistence paths.

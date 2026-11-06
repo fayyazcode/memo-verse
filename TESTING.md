@@ -113,3 +113,9 @@ Screenshots reviewed: `/tmp/momo-minimized-hud-sharp-labels.png`, `/tmp/momo-sha
 Chromium regression run: **8/8 passed** across `villagers`, `foundation` and `compact-hud`. This includes live marker movement, pause, home quest rewards and reload, ordinary mission acceptance, player movement, resource gathering, housing persistence, mobile HUD minimization, sharp labels and early forest treasure recovery. Work/rest screenshots were reviewed. Browser rendering uses software WebGL here; these checks do not establish physical-device frame rates.
 
 After final turning/sleep alignment polish, the production build passed again and both routine browser scenarios passed again (**2/2**) against the updated port-3000 preview. The final logic suite remains **121/121 passing**.
+
+## Quiet HUD and real doorstep interaction
+
+Final production build and TypeScript pass; **124/124 logic tests** pass. Final Chromium run: **16/16 passed**, covering compact status/quest preferences, mission recovery, movement/saves, ordinary mission acceptance, resource gathering, housing persistence, mission hover/map guidance, touch joystick/context actions, both camera perspectives, quiet mobile layouts at 320×640/390×844/430×932/844×390, injected badge removal, nearby readable names, menus/abilities/scaling/building, desktop keyboard navigation, NPC work routines, and a real knock/walk-out/dialogue/reward/reload sequence.
+
+The earlier validation run exposed tests still calling removed permanent journal/quest-cycle controls and an invalid test inventory stack of 279 berries. Tests now use the compact tracker and valid 99/99/81 stacks; the full final run passes. Screenshots of the quiet phone HUD and nearby name were reviewed. Badge handling is verified with locally injected branding; the live Netlify deployment and physical-device FPS are not verified.

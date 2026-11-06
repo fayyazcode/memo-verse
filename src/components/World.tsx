@@ -188,7 +188,8 @@ function House({
       <Box position={[0, 0.88, 0.7]} size={[1, 0.16, 0.45]} color="#eee5d2" />
       {indoors && (
         <Label
-          text={`${NPCS.find((n) => n.id === resident)!.name} · ${residentPose.resting ? 'Resting' : 'At home'} · Knock to talk`}
+          interactionId={resident}
+          text={NPCS.find((n) => n.id === resident)!.name}
           position={[0, 2.8, 3.5]}
           size={0.4}
         />
@@ -511,6 +512,14 @@ function ObjectMesh({ id }: { id: string }) {
       position={id === 'guardian' ? (guardianPosition ?? obj.pos) : obj.pos}
       userData={{ interactionId: obj.id }}
     >
+      {trainingIndex < 0 && id !== 'guardian' && id !== 'plant' && (
+        <Label
+          interactionId={id}
+          text={`${obj.name}${obj.kind === 'resource' && depleted ? ' · Regrowing' : ''}`}
+          position={[0, obj.item === 'wood' ? 2.6 : 1.8, 0]}
+          size={0.43}
+        />
+      )}
       {trainingIndex >= 0 ? (
         <group>
           <Box position={[0, 0.7, 0]} size={[0.18, 1.4, 0.18]} color="#8c7659" />
@@ -520,6 +529,7 @@ function ObjectMesh({ id }: { id: string }) {
             color={(trainingHp ?? 240) > 0 ? '#b6a66c' : '#77776b'}
           />
           <Label
+            interactionId={id}
             text={`${obj.name} · ${Math.ceil(trainingHp ?? 240)} HP`}
             position={[0, 2, 0]}
             size={0.28}
@@ -576,7 +586,12 @@ function ObjectMesh({ id }: { id: string }) {
             <CreatureModel species="mosshell" moving={guardianHp < 100 && guardianHp > 0} />
           </group>
           {guardianHp > 0 && (
-            <Label text={`BRAMBLE GUARDIAN · ${guardianHp} HP`} position={[0, 2.7, 0]} size={0.5} />
+            <Label
+              interactionId={id}
+              text={`BRAMBLE GUARDIAN · ${guardianHp} HP`}
+              position={[0, 2.7, 0]}
+              size={0.5}
+            />
           )}
         </>
       ) : obj.id === 'craft' ? (
@@ -657,6 +672,7 @@ function ObjectMesh({ id }: { id: string }) {
             />
           </mesh>
           <Label
+            interactionId={id}
             text={done ? 'Moonflower · watered' : 'Thirsty moonflower'}
             position={[0, 2.05, 0]}
             color={done ? '#b9e1eb' : '#fff1bc'}
@@ -1185,7 +1201,20 @@ function Buildings() {
       </mesh>
       {build && <gridHelper args={[16, 16, '#eae0b6', '#d0cca6']} position={[2, 0.025, 27]} />}
       {blocks.map((b) => (
-        <RigidBody key={`${b.x}:${b.y}:${b.z}`} type="fixed" colliders="cuboid">
+        <RigidBody
+          key={`${b.x}:${b.y}:${b.z}`}
+          type="fixed"
+          colliders="cuboid"
+          userData={b.item === 'lamp' ? { interactionId: `lamp:${b.x}:${b.y}:${b.z}` } : {}}
+        >
+          {b.item === 'lamp' && (
+            <Label
+              interactionId={`lamp:${b.x}:${b.y}:${b.z}`}
+              text="Crystal lamp"
+              position={[b.x + 0.5, b.y + 1.5, b.z + 0.5]}
+              size={0.43}
+            />
+          )}
           <Box
             position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]}
             size={b.item === 'block' ? [1, 1, 1] : [0.8, 0.8, 0.8]}
@@ -1364,7 +1393,12 @@ function Scene() {
               ([id, c]) => (
                 <group key={id} position={c.pos} userData={{ interactionId: 'creature:' + id }}>
                   <CreatureModel species={id} />
-                  <Label text={c.name} position={[0, 1.7, 0]} size={0.35} />
+                  <Label
+                    interactionId={'creature:' + id}
+                    text={c.name}
+                    position={[0, 1.7, 0]}
+                    size={0.35}
+                  />
                 </group>
               )
             )}

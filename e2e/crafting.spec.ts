@@ -43,7 +43,7 @@ test('a crafting slider previews and produces a batch of wooden blocks', async (
   await expect(row.getByRole('spinbutton')).toHaveValue('10');
   await row.getByRole('spinbutton').fill('6');
   await row.getByRole('button', { name: 'Craft 12' }).click();
-  await expect(page.getByRole('status')).toContainText('Crafted 12 Wooden block');
+  await expect(page.locator('.toast')).toHaveCount(0);
   await expect(row).toContainText('have 4');
   await row.getByRole('button', { name: 'Max', exact: true }).click();
   await expect(row.getByRole('spinbutton')).toHaveValue('4');

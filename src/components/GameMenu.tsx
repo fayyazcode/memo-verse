@@ -10,6 +10,8 @@ import {
   Users,
   Save,
   Home,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react';
 import { useGame, type Panel } from '@/game/store';
 import { navigation } from '@/game/input';
@@ -69,6 +71,16 @@ export default function GameMenu() {
           <span>
             Camera <b>{settings.perspective === 'classic' ? 'Classic' : 'Isometric'}</b>
           </span>
+        </button>
+        <button
+          aria-label={settings.hudMinimized ? 'Show status panels' : 'Hide status panels'}
+          onClick={() => {
+            useGame.getState().configure({ hudMinimized: !settings.hudMinimized });
+            useGame.getState().open(null);
+          }}
+        >
+          {settings.hudMinimized ? <Maximize2 size={20} /> : <Minimize2 size={20} />}
+          <span>{settings.hudMinimized ? 'Show status panels' : 'Hide status panels'}</span>
         </button>
         <button
           aria-label="Toggle building mode"

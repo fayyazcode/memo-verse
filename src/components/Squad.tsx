@@ -230,8 +230,8 @@ export function SquadHud() {
                 {CREATURES[id].name} <small>Lv. {level}</small>
               </b>
               <span>
-                {Math.ceil(s.creatures[id]!.hp)}/{maxCreatureHp(s.creatures[id]!)} HP · {m!.charge}%
-                ult
+                {Math.ceil(s.creatures[id]!.hp)}/{maxCreatureHp(s.creatures[id]!)} HP{' '}
+                <em className="summary-charge">· {m!.charge}% ult</em>
               </span>
             </span>
             <ChevronUp size={16} />

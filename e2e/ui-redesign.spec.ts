@@ -80,7 +80,6 @@ test.describe('mobile HUD redesign', () => {
       await page.setViewportSize({ width: w, height: h });
       const elements = [
         page.getByRole('button', { name: 'Open adventure menu' }),
-        page.getByRole('button', { name: 'Pause game', exact: true }),
         page.getByRole('group', { name: 'Movement joystick' }),
         page.getByRole('button', { name: 'Basic attack', exact: true }),
         page.getByRole('button', { name: 'Interact or gather' }),
@@ -149,6 +148,7 @@ test.describe('mobile HUD redesign', () => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.screenshot({ path: '/tmp/momo-ui-scale130.png' });
     await inside(page.getByRole('button', { name: 'Open tracked mission' }), 360, 800);
+    await page.getByRole('button', { name: 'Expand mission tracker' }).tap();
     await page.getByRole('button', { name: 'Track next mission' }).tap();
     await expect(page.getByRole('button', { name: 'Open tracked mission' })).toContainText(
       'Hidden Forest Secrets'
@@ -182,7 +182,8 @@ test.describe('mobile HUD redesign', () => {
     await page.getByRole('button', { name: 'Rotate building view' }).tap();
     await page.getByRole('button', { name: 'Exit building mode' }).tap();
     await expect(page.getByRole('button', { name: 'Basic attack', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+    await page.getByRole('button', { name: 'Open adventure menu' }).tap();
+    await page.getByRole('button', { name: 'Pause & save', exact: true }).tap();
     await page.getByRole('button', { name: 'Save and quit' }).tap();
     await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
     await page.reload();

@@ -1,12 +1,31 @@
 'use client';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { ArrowUp, Footprints, Hand, Hammer, Map, PawPrint, Sparkles, Swords } from 'lucide-react';
+import {
+  ArrowUp,
+  Footprints,
+  Hand,
+  Hammer,
+  Map,
+  PawPrint,
+  Sprout,
+  Sparkles,
+  Swords,
+} from 'lucide-react';
 import { useGame } from '@/game/store';
+import { NPCS, OBJECTS } from '@/game/data';
+import { villagerPose } from '@/game/villagers';
 import { navigation, motion } from '@/game/input';
 import { joystickVector, resetTouch, touchInput, touchLook } from '@/game/touch';
 export default function TouchControls() {
+  const visitor = useGame((s) => s.visitor);
   const trayOpen = useGame((s) => s.abilityTrayOpen);
   const target = useGame((s) => s.target);
+  const atHome = useGame(
+    (s) =>
+      !!s.target &&
+      NPCS.some((n) => n.id === s.target) &&
+      villagerPose(s.target, s.save.playTime).indoors
+  );
   const busy = useGame((s) => !!s.panel || !!s.dialogue),
     build = useGame((s) => s.build);
   const stick = useRef<HTMLDivElement>(null),
@@ -130,6 +149,11 @@ export default function TouchControls() {
         </button>
       </div>
       <div className="touch-actions" hidden={trayOpen}>
+        {!build && (
+          <span className="action-sprout" aria-hidden="true">
+            <Sprout size={22} />
+          </span>
+        )}
         {build ? (
           <>
             <button
@@ -177,7 +201,11 @@ export default function TouchControls() {
           </>
         ) : (
           <>
-            <button aria-label="Basic attack" onClick={() => action.attack()}>
+            <button
+              className="touch-attack"
+              aria-label="Basic attack"
+              onClick={() => action.attack()}
+            >
               <Swords size={19} />
               <small>Attack</small>
             </button>
@@ -198,6 +226,7 @@ export default function TouchControls() {
             <button
               className="touch-interact"
               data-available={!!target}
+              disabled={!!visitor && visitor === target}
               aria-label="Interact or gather"
               onClick={() => {
                 navigation.destination = null;
@@ -205,7 +234,17 @@ export default function TouchControls() {
               }}
             >
               <Hand size={23} />
-              <small>{target ? 'Interact' : 'Gather'}</small>
+              <small>
+                {visitor && visitor === target
+                  ? 'Coming…'
+                  : atHome
+                    ? 'Knock'
+                    : NPCS.some((n) => n.id === target)
+                      ? 'Talk'
+                      : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
+                        ? 'Gather'
+                        : 'Use'}
+              </small>
             </button>
             <button
               className="touch-jump"
