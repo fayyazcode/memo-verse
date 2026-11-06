@@ -224,3 +224,169 @@ describe('early forest treasure credit', () => {
     expect(game().save.inventory).toEqual([]);
   });
 });
+
+describe('all permanent mission accomplishments', () => {
+  it('repairs stale legacy progress across all missions without replaying items, XP or rewards', async () => {
+    const { validateSave } = await import('../src/game/store');
+    const { LANDMARKS } = await import('../src/game/data');
+    const { starterHome } = await import('../src/game/building');
+    const s = freshSave();
+    s.coins = 110;
+    s.inventory = [{ item: 'crystal', qty: 2 }];
+    s.flags = [
+      'chest',
+      'repaired',
+      'guardianDefeated',
+      ...['plant', 'toughNode', 'practiceSwitch', 'finalSwitch', 'passage'].map(
+        (id) => 'ability:' + id
+      ),
+    ];
+    s.discoveries = LANDMARKS.map((l) => l.id);
+    s.blocks = starterHome(0, 22);
+    for (const id of Object.keys(CREATURES) as Species[])
+      s.creatures[id] = { hp: 60, xp: 0, friendship: 10 };
+    for (const q of QUESTS) s.quests[q.id] = { status: 'active', progress: {} };
+    const original = structuredClone(s),
+      recovered = validateSave(s);
+    for (const q of QUESTS)
+      for (const o of q.objectives) {
+        const permanent = [
+          'discover',
+          'befriend',
+          'ability',
+          'repair',
+          'defeat',
+          'open',
+          'shelter',
+        ].includes(o.event);
+        expect(recovered.quests[q.id].progress[o.id] ?? 0, `${q.id}:${o.id}`).toBe(
+          permanent ? o.count : 0
+        );
+      }
+    expect(s).toEqual(original);
+    expect(recovered.inventory).toEqual(s.inventory);
+    expect(recovered.coins).toBe(s.coins);
+    expect(recovered.xp).toBe(s.xp);
+    expect(recovered.creatures).toEqual(s.creatures);
+    expect(validateSave(recovered)).toEqual(recovered);
+    expect(QUESTS.every((q) => recovered.quests[q.id].status === 'active')).toBe(true);
+  });
+  it('credits early utility actions when accepting their mission without replaying the utility rewards', () => {
+    const s = freshSave();
+    s.quests.q03 = { status: 'complete', progress: {} };
+    s.flags = ['ability:plant', 'ability:toughNode', 'ability:practiceSwitch'];
+    s.creatures.aquabub = { hp: 60, xp: 15, friendship: 10 };
+    s.creatures.mosshell = { hp: 60, xp: 15, friendship: 10 };
+    s.creatures.zaplet = { hp: 60, xp: 15, friendship: 10 };
+    s.inventory = [
+      { item: 'fruit', qty: 2 },
+      { item: 'ore', qty: 3 },
+    ];
+    useGame.setState({ save: s });
+    accept('q07');
+    accept('q08');
+    expect(ready(game().save, 'q07')).toBe(true);
+    expect(game().save.quests.q08.progress.power).toBe(1);
+    expect(game().save.quests.q08.progress.friend).toBe(1);
+    expect(game().save.quests.q08.progress.fragment ?? 0).toBe(0);
+    expect(game().save.quests.q08.progress.treat ?? 0).toBe(0);
+    expect(game().save.inventory).toEqual(s.inventory);
+    expect(game().save.coins).toBe(s.coins);
+    expect(game().save.creatures).toEqual(s.creatures);
+  });
+  it('prevents every incomplete or already-claimed mission from paying twice', () => {
+    for (const quest of QUESTS) {
+      const s = freshSave();
+      s.quests[quest.id] = { status: 'active', progress: {} };
+      expect(ready(s, quest.id)).toBe(false);
+      useGame.setState({ save: s });
+      game().claim(quest.id);
+      expect(game().save.coins).toBe(s.coins);
+      useGame.setState({
+        save: {
+          ...s,
+          quests: {
+            [quest.id]: {
+              status: 'complete',
+              progress: Object.fromEntries(quest.objectives.map((o) => [o.id, o.count])),
+            },
+          },
+        },
+      });
+      const before = structuredClone(game().save);
+      game().claim(quest.id);
+      expect(game().save).toEqual(before);
+    }
+  });
+});
+
+describe('mission delivery and conversation order', () => {
+  it('requires collection objectives before resource deliveries and charges each delivery once', () => {
+    for (const id of ['q02', 'q06']) {
+      const quest = QUESTS.find((q) => q.id === id)!,
+        objective = quest.objectives.find((o) => o.event === 'deliver')!;
+      const s = freshSave();
+      s.quests[id] = { status: 'active', progress: {} };
+      s.inventory = Object.entries(objective.consume!).map(([item, qty]) => ({
+        item: item as ItemId,
+        qty,
+      }));
+      useGame.setState({ save: s });
+      deliver(objective.target);
+      expect(game().save.inventory).toEqual(s.inventory);
+      expect(game().save.quests[id].progress[objective.id] ?? 0).toBe(0);
+      useGame.setState({
+        save: {
+          ...s,
+          quests: {
+            [id]: {
+              status: 'active',
+              progress: Object.fromEntries(
+                quest.objectives.filter((o) => o !== objective).map((o) => [o.id, o.count])
+              ),
+            },
+          },
+        },
+      });
+      deliver(objective.target);
+      expect(game().save.inventory).toEqual([]);
+      expect(ready(game().save, id)).toBe(true);
+      const delivered = structuredClone(game().save);
+      deliver(objective.target);
+      expect(game().save).toEqual(delivered);
+      game().claim(id);
+      const paid = structuredClone(game().save);
+      game().claim(id);
+      expect(game().save).toEqual(paid);
+      expect(paid.coins).toBe(s.coins + quest.coins);
+    }
+  });
+  it('credits a nighttime mission conversation only after the resident comes outside', async () => {
+    const { homePoint, resetVillagerVisits } = await import('../src/game/villagers');
+    resetVillagerVisits();
+    const s = freshSave();
+    s.playTime = 600;
+    s.position = homePoint('bloop', 3.5);
+    s.quests.q04 = { status: 'active', progress: {} };
+    useGame.setState({
+      save: s,
+      target: 'bloop',
+      dialogue: null,
+      panel: null,
+      visitor: null,
+      started: true,
+    });
+    game().interact();
+    expect(game().save.quests.q04.progress.bloop ?? 0).toBe(0);
+    game().tick(1);
+    expect(game().dialogue).toBeNull();
+    expect(game().save.quests.q04.progress.bloop ?? 0).toBe(0);
+    game().tick(5);
+    expect(game().dialogue).toBe('bloop');
+    expect(game().save.quests.q04.progress.bloop).toBe(1);
+    expect(game().save.coins).toBe(s.coins);
+    expect(game().save.inventory).toEqual(s.inventory);
+    resetVillagerVisits();
+    useGame.setState({ dialogue: null, visitor: null });
+  });
+});

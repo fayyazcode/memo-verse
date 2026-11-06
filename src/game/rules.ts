@@ -5,6 +5,8 @@ export type Block = {
   y: number;
   z: number;
   item: 'block' | 'lamp' | 'stool' | 'statue';
+  part?: 'roof' | 'gate';
+  rotation?: 0 | 1;
 };
 export function count(inv: Stack[], item: ItemId) {
   return inv.reduce((n, s) => n + (s.item === item ? s.qty : 0), 0);
@@ -80,48 +82,95 @@ export function validPlacement(block: Block, blocks: Block[], player: [number, n
     y >= 8
   )
     return false;
-  if (blocks.some((b) => b.x === x && b.y === y && b.z === z)) return false;
+  if (block.part && (block.item !== 'block' || !['roof', 'gate'].includes(block.part)))
+    return false;
+  if (block.rotation !== undefined && block.rotation !== 0 && block.rotation !== 1) return false;
+  if ((block.part === 'gate' && y + 2 > PLOT.height) || (block.part === 'roof' && y < 2))
+    return false;
+  const height = block.part === 'gate' ? 2 : 1;
+  if (
+    blocks.some(
+      (b) => b.x === x && b.z === z && y < b.y + (b.part === 'gate' ? 2 : 1) && y + height > b.y
+    )
+  )
+    return false;
   if (
     Math.abs(player[0] - (x + 0.5)) < 0.9 &&
     Math.abs(player[2] - (z + 0.5)) < 0.9 &&
-    player[1] < y + 1 &&
+    player[1] < y + height &&
     player[1] + 1.8 > y
   )
     return false;
   return (
     y === 0 ||
     blocks.some(
-      (b) => b.item === 'block' && Math.abs(b.x - x) + Math.abs(b.y - y) + Math.abs(b.z - z) === 1
+      (b) =>
+        b.item === 'block' &&
+        b.part !== 'gate' &&
+        Math.abs(b.x - x) + Math.abs(b.y - y) + Math.abs(b.z - z) === 1
     )
   );
 }
-// An interior cell must have headroom, a solid roof, and a perimeter closed except for a walkable doorway.
+// Roofed headroom may span a room of any size. Its boundary must be walled
+// except for one contiguous, accessible doorway (one or two cells wide).
 export function validShelter(blocks: Block[]) {
-  const solids = blocks.filter((b) => b.item === 'block');
+  const solids = blocks.filter((b) => b.item === 'block' && b.part !== 'gate');
   if (solids.length < 12) return false;
   const occupied = new Set(solids.map((b) => `${b.x},${b.y},${b.z}`));
+  const ceiling = new Map<string, number>();
+  for (const b of solids)
+    ceiling.set(`${b.x},${b.z}`, Math.max(ceiling.get(`${b.x},${b.z}`) ?? -1, b.y));
   const has = (x: number, y: number, z: number) => occupied.has(`${x},${y},${z}`);
-  for (let x = PLOT.x + 1; x < PLOT.x + 15; x++)
-    for (let z = PLOT.z + 1; z < PLOT.z + 15; z++) {
-      if (has(x, 0, z) || has(x, 1, z) || !has(x, 2, z)) continue;
-      const perimeter: [[number, number], [number, number], [number, number], [number, number]] = [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ];
-      const walls = perimeter.filter(
-        ([dx, dz]) => has(x + dx, 0, z + dz) && has(x + dx, 1, z + dz)
-      );
-      const doors = perimeter.filter(
-        ([dx, dz]) =>
-          !has(x + dx, 0, z + dz) &&
-          !has(x + dx, 1, z + dz) &&
-          !has(x + dx * 2, 0, z + dz * 2) &&
-          !has(x + dx * 2, 1, z + dz * 2)
-      );
-      if (walls.length === 3 && doors.length === 1) return true;
-    }
+  const inside = (x: number, z: number) =>
+    x >= PLOT.x && x < PLOT.x + 16 && z >= PLOT.z && z < PLOT.z + 16;
+  const directions = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+  for (let floor = 0; floor <= 5; floor++) {
+    const clear = (x: number, z: number) => !has(x, floor, z) && !has(x, floor + 1, z);
+    const roofed = (x: number, z: number) =>
+      inside(x, z) &&
+      clear(x, z) &&
+      (floor === 0 || has(x, floor - 1, z)) &&
+      (ceiling.get(`${x},${z}`) ?? -1) >= floor + 2;
+    const visited = new Set<string>();
+    for (let x = PLOT.x; x < PLOT.x + 16; x++)
+      for (let z = PLOT.z; z < PLOT.z + 16; z++) {
+        if (!roofed(x, z) || visited.has(`${x},${z}`)) continue;
+        const pending = [[x, z]],
+          openings: { x: number; z: number; dx: number; dz: number }[] = [];
+        let walls = 0,
+          broken = false;
+        while (pending.length) {
+          const [cx, cz] = pending.pop()!,
+            key = `${cx},${cz}`;
+          if (visited.has(key)) continue;
+          visited.add(key);
+          for (const [dx, dz] of directions) {
+            const nx = cx + dx,
+              nz = cz + dz;
+            if (roofed(nx, nz)) {
+              if (!visited.has(`${nx},${nz}`)) pending.push([nx, nz]);
+              continue;
+            }
+            if (has(nx, floor, nz) && has(nx, floor + 1, nz)) {
+              walls++;
+              continue;
+            }
+            if (clear(nx, nz) && clear(nx + dx, nz + dz)) openings.push({ x: nx, z: nz, dx, dz });
+            else broken = true;
+          }
+        }
+        if (broken || walls < 3 || openings.length < 1 || openings.length > 2) continue;
+        if (openings.length === 1) return true;
+        const [a, b] = openings;
+        if (a.dx === b.dx && a.dz === b.dz && Math.abs(a.x - b.x) + Math.abs(a.z - b.z) === 1)
+          return true;
+      }
+  }
   return false;
 }
 export type CreatureState = { xp: number; friendship: number; hp: number };

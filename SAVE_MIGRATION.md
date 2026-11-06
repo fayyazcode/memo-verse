@@ -23,3 +23,9 @@ Villager activity is derived from the existing active-play `playTime`. There are
 ## Quiet HUD and doorstep visits
 
 Browser settings use `hudStyleVersion: 2` to adopt a compact mission tracker once. Players can expand it again and retain their choice. Adventure saves stay at version 1. Knock visits and their brief routine delays are transient; loading reconstructs the normal saved-time routine. Conversations and quest rewards keep their existing IDs and persistence paths.
+
+## Roofs, gates and mission recovery
+
+`Save.blocks` retains existing item IDs. Optional `part: 'roof' | 'gate'` and `rotation: 0 | 1` metadata distinguish wooden roof panels and gates; absent metadata renders/validates the original cube. Gate opening uses `open:gate:x:y:z` in the existing flags list. Roof/gate pieces each cost and refund one wooden block. The validator checks metadata, plot/height limits and a gate's two-cell headroom; invalid data does not reset the save.
+
+Loading now projects recorded discoveries, owned companions, utility flags, repair/Guardian flags, the chest flag and a valid existing shelter into active mission progress. This returns a reconciled copy without replaying materials, currency, creature XP or mission rewards. Repeatable gather/craft counters retain their after-acceptance semantics. Save/DB versions, quest IDs and once-only claims remain unchanged.

@@ -1,3 +1,4 @@
+import { starterHome, canBuildHome, type BuildPart } from './building';
 import {
   npcPosition,
   villagerPose,
@@ -228,9 +229,18 @@ export function validateSave(value: unknown): Save {
         b.z < 19 ||
         b.z >= 35 ||
         b.y < 0 ||
-        b.y >= 8
+        b.y >= 8 ||
+        (b.part !== undefined && (b.item !== 'block' || !['roof', 'gate'].includes(b.part))) ||
+        (b.part === 'gate' && b.y + 2 > 8) ||
+        (b.part === 'roof' && b.y < 2) ||
+        (b.rotation !== undefined && b.rotation !== 0 && b.rotation !== 1)
     ) ||
-    new Set(s.blocks.map((b) => `${b.x},${b.y},${b.z}`)).size !== s.blocks.length
+    new Set(s.blocks.map((b) => `${b.x},${b.y},${b.z}`)).size !== s.blocks.length ||
+    s.blocks.some(
+      (b) =>
+        b.part === 'gate' &&
+        s.blocks.some((v) => v !== b && v.x === b.x && v.z === b.z && v.y === b.y + 1)
+    )
   )
     throw Error('Invalid saved buildings.');
   if (
@@ -277,18 +287,31 @@ function event(s: Save, type: string, target: string, amount = 1): Save {
 }
 // Reconcile one-time accomplishments without replaying loot or currency rewards.
 export function reconcilePermanentProgress(s: Save): Save {
-  if (!s.flags.includes('chest')) return s;
-  const missing = QUESTS.some(
-    (def) =>
-      s.quests[def.id]?.status === 'active' &&
-      def.objectives.some(
-        (o) =>
-          o.event === 'open' &&
-          o.target === 'chest' &&
-          (s.quests[def.id].progress[o.id] ?? 0) < o.count
-      )
-  );
-  return missing ? event(s, 'open', 'chest') : s;
+  let next = s;
+  for (const def of QUESTS) {
+    const q = s.quests[def.id];
+    if (q?.status !== 'active') continue;
+    for (const o of def.objectives) {
+      const done =
+        o.event === 'open' && o.target === 'chest'
+          ? s.flags.includes('chest')
+          : o.event === 'discover'
+            ? s.discoveries.includes(o.target)
+            : o.event === 'befriend'
+              ? !!s.creatures[o.target as Species]
+              : o.event === 'ability'
+                ? s.flags.includes('ability:' + o.target)
+                : o.event === 'repair'
+                  ? s.flags.includes('repaired')
+                  : o.event === 'defeat' && o.target === 'guardian'
+                    ? s.flags.includes('guardianDefeated')
+                    : o.event === 'shelter'
+                      ? validShelter(s.blocks)
+                      : false;
+      if (done && (q.progress[o.id] ?? 0) < o.count) next = event(next, o.event, o.target, o.count);
+    }
+  }
+  return next;
 }
 export function ready(s: Save, id: string) {
   const q = QUESTS.find((q) => q.id === id);
@@ -380,6 +403,11 @@ export type GameStore = {
   attack: (elemental?: boolean) => void;
   discover: (id: string) => void;
   place: (b: Block) => void;
+  buildHome: (x: number, z: number) => void;
+  buildPart: BuildPart;
+  buildRotation: 0 | 1;
+  roofHeight: number;
+  gateFloor: number;
   remove: (b: Block) => void;
   tick: (dt: number) => void;
   persist: (quit?: boolean) => Promise<void>;
@@ -400,6 +428,10 @@ export const useGame = create<GameStore>((set, get) => ({
   noticeId: 0,
   saveStatus: 'Not saved yet',
   build: false,
+  buildPart: 'wall',
+  buildRotation: 0,
+  roofHeight: 2,
+  gateFloor: 0,
   abilityTrayOpen: false,
   selected: 0,
   command: 'follow',
@@ -530,6 +562,23 @@ export const useGame = create<GameStore>((set, get) => ({
   interact: () => {
     const { target, save: s } = get();
     if (!target) return;
+    if (target.startsWith('gate:')) {
+      const gate = s.blocks.find(
+        (b) => b.part === 'gate' && target === `gate:${b.x}:${b.y}:${b.z}`
+      );
+      if (!gate || Math.hypot(s.position[0] - gate.x - 0.5, s.position[2] - gate.z - 0.5) > 3)
+        return;
+      const flag = 'open:' + target;
+      set({
+        save: {
+          ...s,
+          flags: s.flags.includes(flag) ? s.flags.filter((f) => f !== flag) : [...s.flags, flag],
+        },
+      });
+      sound('click', get().settings.effects);
+      void get().persist();
+      return;
+    }
     if (target.startsWith('lamp:')) {
       const flag = 'off:' + target;
       set({
@@ -649,7 +698,10 @@ export const useGame = create<GameStore>((set, get) => ({
         get().notify('Accept The Broken Passage and clear and power it first.');
         return;
       }
-      if (s.flags.includes('repaired')) return;
+      if (s.flags.includes('repaired')) {
+        set({ save: reconcilePermanentProgress(s) });
+        return;
+      }
       const inv = transact(s.inventory, { processedWood: 6, refinedStone: 4 }, {});
       if (!inv) {
         get().notify('Repair needs 6 processed wood and 4 refined stone.');
@@ -912,6 +964,7 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     const flag = 'ability:' + id;
     if (s.flags.includes(flag)) {
+      set({ save: reconcilePermanentProgress(s) });
       get().notify('Your companion already helped here.');
       return;
     }
@@ -965,13 +1018,34 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!['square', 'plot'].includes(id))
       get().notify('Location discovered — ' + (OBJECTS.find((o) => o.id === id)?.name ?? id));
   },
+  buildHome: (x, z) => {
+    const s = get().save;
+    if (s.quests.q02?.status !== 'complete') {
+      get().notify('Help Bruno first to unlock building.');
+      return;
+    }
+    const plan = starterHome(x, z, get().buildRotation);
+    if (!canBuildHome(plan, s.blocks, s.position)) {
+      get().notify('The house needs a clear space on your plot. Step outside its outline.');
+      return;
+    }
+    const inventory = transact(s.inventory, { block: plan.length }, {});
+    if (!inventory) {
+      get().notify(`You need ${plan.length} Wooden blocks for the starter home.`);
+      return;
+    }
+    const save = reconcilePermanentProgress({ ...s, inventory, blocks: [...s.blocks, ...plan] });
+    set({ save, buildPart: 'wall' });
+    sound('gather', get().settings.effects);
+    void get().persist();
+  },
   place: (b) => {
     const s = get().save;
     if (s.quests.q02?.status !== 'complete') {
       get().notify('Help Bruno to unlock building.');
       return;
     }
-    if (!validPlacement(b, s.blocks, s.position)) return;
+    if (s.blocks.length >= 2048 || !validPlacement(b, s.blocks, s.position)) return;
     const inv = transact(s.inventory, { [b.item]: 1 }, {});
     if (!inv) {
       get().notify(`You need ${ITEMS[b.item].name}.`);
@@ -985,8 +1059,9 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   remove: (b) => {
     const s = get().save;
-    if (!s.blocks.some((v) => v.x === b.x && v.y === b.y && v.z === b.z)) return;
-    const inv = transact(s.inventory, {}, { [b.item]: 1 });
+    const stored = s.blocks.find((v) => v.x === b.x && v.y === b.y && v.z === b.z);
+    if (!stored) return;
+    const inv = transact(s.inventory, {}, { [stored.item]: 1 });
     if (!inv) {
       get().notify('Your bag is full. The block stays in place.');
       return;
@@ -996,6 +1071,9 @@ export const useGame = create<GameStore>((set, get) => ({
         ...s,
         inventory: inv,
         blocks: s.blocks.filter((v) => !(v.x === b.x && v.y === b.y && v.z === b.z)),
+        flags: s.flags.filter(
+          (f) => f !== `open:gate:${b.x}:${b.y}:${b.z}` && f !== `off:lamp:${b.x}:${b.y}:${b.z}`
+        ),
       },
     });
     void get().persist();

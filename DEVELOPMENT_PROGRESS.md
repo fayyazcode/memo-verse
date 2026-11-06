@@ -101,3 +101,9 @@ Shared positions now drive NPC bodies, click-to-talk navigation, nearby interact
 Reworked the phone HUD around the supplied reference: cream status cards/hotbar, forest menu/map controls, and four rounded action petals. Detailed quests, pause and HUD visibility controls are available through on-demand controls and the side menu. The play view shows one mission arrow and only the current nearby object's sharp name. Routine notifications are suppressed; important progression, blocked actions and save failures remain visible. Injected Netlify badge handling is tested locally.
 
 Added an explicit Knock action shared by desktop/mobile interaction and the doorway button. Residents stand, open their door and walk outside before dialogue starts. Repeated knocks cannot restart the approach. Temporary visits return to the original routine and require no save migration.
+
+## Mission 9 construction and mission-flow audit
+
+Added Wall/Roof/Gate tools with roof height, gate floor/orientation and a 24-block starter-home outline/commit flow. Gate opening has real animated collision and saved state; roof/wall cutaways preserve the normal camera distance inside. Shelter checks now recognise larger rooms and raised floors while retaining old cube houses and rejecting incomplete enclosures. Starter placement validates and charges atomically; removal refunds the saved item and clears obsolete interaction flags.
+
+Audited all ten missions and expanded permanent-objective recovery, delivery/reward safeguards, stable journal numbering and live shelter checklists. Repeatable gather/craft objectives keep their original timing and now explain it in guidance. MISSION_AUDIT.md records each flow, changes and compatibility limits. Existing item IDs, version-1 saves and quest rewards are retained.

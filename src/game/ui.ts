@@ -1,17 +1,23 @@
-import { QUESTS } from './data';
+import { QUESTS, type Objective } from './data';
 import { validShelter } from './rules';
 import type { Save } from './store';
 export function trackedMission(save: Save, preferred: string | null) {
   const active = QUESTS.filter((q) => save.quests[q.id]?.status === 'active');
   return active.find((q) => q.id === preferred) ?? active[0] ?? null;
 }
+export function objectiveValue(save: Save, id: string, objective: Objective) {
+  if (
+    objective.event === 'shelter' &&
+    save.quests[id]?.status !== 'complete' &&
+    !validShelter(save.blocks)
+  )
+    return 0;
+  return Math.min(objective.count, save.quests[id]?.progress[objective.id] ?? 0);
+}
 export function missionProgress(save: Save, id: string) {
   const quest = QUESTS.find((q) => q.id === id)!;
   const total = quest.objectives.reduce((n, o) => n + o.count, 0);
-  const value = (o: (typeof quest.objectives)[number]) =>
-    o.event === 'shelter' && !validShelter(save.blocks)
-      ? 0
-      : Math.min(o.count, save.quests[id]?.progress[o.id] ?? 0);
+  const value = (o: Objective) => objectiveValue(save, id, o);
   const done = quest.objectives.reduce((n, o) => n + value(o), 0);
   const next = quest.objectives.find((o) => value(o) < o.count);
   return { total, done, next, current: next ? value(next) : 0 };
@@ -24,7 +30,12 @@ export function noticeTone(text: string): 'danger' | 'reward' | 'warning' | 'inf
   )
     return 'danger';
   if (/mission complete|reward|level up|new friend/i.test(text)) return 'reward';
-  if (/need|full|blocked|cooling|unlock|not enough|no target|first/i.test(text)) return 'warning';
+  if (
+    /need|full|blocked|cooling|unlock|not enough|no target|first|no delivery|check ingredients|^Visit |^Craft at |^Summon |^Meet .*after|clear space|step outside/i.test(
+      text
+    )
+  )
+    return 'warning';
   return 'info';
 }
 export const uiScales = [90, 100, 115, 130] as const;

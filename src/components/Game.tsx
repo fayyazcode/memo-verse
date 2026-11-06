@@ -3,7 +3,8 @@ import { npcPosition, villagerPose } from '@/game/villagers';
 import GameMenu from './GameMenu';
 import Notifications from './Notifications';
 import PlatformBadgeGuard from './PlatformBadgeGuard';
-import { trackedMission, missionProgress, uiScales } from '@/game/ui';
+import BuildingTools from './BuildingTools';
+import { trackedMission, missionProgress, objectiveValue, uiScales } from '@/game/ui';
 import { Menu, Pause, Minimize2, Maximize2, Minus } from 'lucide-react';
 import { SquadHud, SquadPanel, AbilityList } from './Squad';
 import { ROLES, squadOf } from '@/game/squad';
@@ -391,7 +392,11 @@ function Hud() {
     (target === 'plant' && s.flags.includes('ability:plant') ? 'Moonflower · watered' : null) ??
     NPCS.find((n) => n.id === target)?.name ??
     OBJECTS.find((o) => o.id === target)?.name ??
-    (target?.startsWith('lamp:') ? 'Crystal lamp' : null) ??
+    (target?.startsWith('gate:')
+      ? 'Wooden gate'
+      : target?.startsWith('lamp:')
+        ? 'Crystal lamp'
+        : null) ??
     (target?.startsWith('creature:') ? CREATURES[target.slice(9) as Species].name : null);
   const forest = s.position[0] > 22;
   const wading = riverDepth({ x: s.position[0], y: s.position[1], z: s.position[2] }) > 0.12;
@@ -567,7 +572,7 @@ function Hud() {
               <p>{activeQuest.description}</p>
               <div className="objective-list">
                 {activeQuest.objectives.map((o) => {
-                  const n = s.quests[activeQuest.id].progress[o.id] ?? 0;
+                  const n = objectiveValue(s, activeQuest.id, o);
                   return (
                     <div key={o.id} className={n >= o.count ? 'done' : ''}>
                       <span className="objective-dot">
@@ -709,14 +714,7 @@ function Hud() {
             </small>
           </div>
         )}
-      {build && (
-        <div className="build-banner">
-          <Hammer size={16} />
-          <b>Make it yours</b>
-          <span>Left click: place · Right click: remove · Hold middle mouse: camera</span>
-          <kbd>B</kbd>
-        </div>
-      )}
+      {build && <BuildingTools />}
       {targetName && !panel && (
         <div className="interaction" data-home={homeTarget} data-visiting={!!visitor}>
           <kbd>{OBJECTS.find((o) => o.id === target)?.kind === 'resource' ? 'F' : 'E'}</kbd>
@@ -825,7 +823,7 @@ function Dialog() {
           <p className="section-kicker">{villagerPose(id, s.playTime).activity}</p>
           <p>
             {topic
-              ? `There’s always something to discover. ${id === 'luna' ? 'Craft treats at Bruno’s bench. Emberfox likes warm treats, Aquabub likes river fruit, Mosshell likes mineral snacks, and Zaplet loves charged treats.' : id === 'bruno' ? 'Start with a pickaxe. For your shelter, make three two-block-high walls around an empty cell, add a roof, and leave a doorway. Twelve blocks alone won’t make a home.' : id === 'bloop' ? 'Find the Ancient Oak, River Bend, and Crystal Clearing. Your companions can help with plants, rocks, and power devices.' : id === 'foxy' ? 'I buy common resources. All prices are per item. Keep supplies you need for quests!' : 'Speak with villagers, accept missions, and explore. Your journal will keep track of everything.'}`
+              ? `There’s always something to discover. ${id === 'luna' ? 'Craft treats at Bruno’s bench. Emberfox likes warm treats, Aquabub likes river fruit, Mosshell likes mineral snacks, and Zaplet loves charged treats.' : id === 'bruno' ? 'Start with a pickaxe. For your shelter, open Build from Menu. Choose Wall, Roof, or Gate, or preview the 24-block starter home. Stack walls two blocks high and keep an entrance clear.' : id === 'bloop' ? 'Find the Ancient Oak, River Bend, and Crystal Clearing. Your companions can help with plants, rocks, and power devices.' : id === 'foxy' ? 'I buy common resources. All prices are per item. Keep supplies you need for quests!' : 'Speak with villagers, accept missions, and explore. Your journal will keep track of everything.'}`
               : s.flags.includes('adventureComplete') && id === 'moss'
                 ? 'You brought the forest together, little wanderer. The passage is open, and this village is your home. Thank you.'
                 : npc.greeting}
@@ -965,7 +963,7 @@ function Journal() {
           (q) =>
             filter === 'all' ||
             (filter === 'available' ? available(s, q.id) : s.quests[q.id]?.status === filter)
-        ).map((q, i) => {
+        ).map((q) => {
           const state = s.quests[q.id],
             unlocked = available(s, q.id);
           return (
@@ -974,11 +972,7 @@ function Journal() {
               className={`journal-quest ${state?.status === 'complete' ? 'completed' : ''}`}
             >
               <div className="quest-number">
-                {state?.status === 'complete' ? (
-                  <Check size={18} />
-                ) : (
-                  String(i + 1).padStart(2, '0')
-                )}
+                {state?.status === 'complete' ? <Check size={18} /> : q.id.slice(1)}
               </div>
               <div>
                 <span className="eyebrow">
@@ -1007,10 +1001,10 @@ function Journal() {
                     {q.objectives.map((o) => (
                       <li
                         key={o.id}
-                        className={(state.progress[o.id] ?? 0) >= o.count ? 'done' : ''}
+                        className={objectiveValue(s, q.id, o) >= o.count ? 'done' : ''}
                       >
-                        {(state.progress[o.id] ?? 0) >= o.count ? '✓' : '○'} {o.label}{' '}
-                        {o.count > 1 ? `(${state.progress[o.id] ?? 0}/${o.count})` : ''}
+                        {objectiveValue(s, q.id, o) >= o.count ? '✓' : '○'} {o.label}{' '}
+                        {o.count > 1 ? `(${objectiveValue(s, q.id, o)}/${o.count})` : ''}
                       </li>
                     ))}
                   </ul>

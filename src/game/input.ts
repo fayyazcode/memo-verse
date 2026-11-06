@@ -5,6 +5,7 @@ export const playerRuntime = {
   moving: false,
   running: false,
   grounded: true,
+  sheltered: false,
   heading: 0,
   action: 'idle',
   actionUntil: 0,

@@ -35,6 +35,8 @@ import { SKINS, cameraProfile } from '@/game/appearance';
 import { RIVER, waterMotion } from '@/game/river';
 import { sound } from '@/game/audio';
 import { Character, CreatureModel } from './Character';
+import { RoofTile, WoodenGate, HousingWall } from './BuildingPieces';
+import { homeSite, starterHome, buildingTarget } from '@/game/building';
 import { Villager, Workplaces } from './Villagers';
 import { HOMES, npcPosition, villagerPose, homePoint } from '@/game/villagers';
 const UP = new THREE.Vector3(0, 1, 0);
@@ -881,6 +883,14 @@ function Player() {
       b.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
     playerRuntime.position = [p.x, p.y, p.z];
+    playerRuntime.sheltered = state.save.blocks.some(
+      (block) =>
+        block.item === 'block' &&
+        block.part !== 'gate' &&
+        block.y > p.y + 1 &&
+        Math.abs(block.x + 0.5 - p.x) < 0.7 &&
+        Math.abs(block.z + 0.5 - p.z) < 0.7
+    );
     if (visual.current) playerRuntime.heading = visual.current.rotation.y;
     playerRuntime.moving = isMoving;
     playerRuntime.running = isRunning;
@@ -912,7 +922,20 @@ function Player() {
       Math.cos(cameraYaw) * Math.cos(profile.pitch) * distance
     );
     const ray = new rapier.Ray(focus, offset.clone().normalize());
-    const obstruction = world.castRay(ray, distance, true, undefined, undefined, undefined, b);
+    const obstruction = world.castRay(
+      ray,
+      distance,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      b,
+      (collider) => {
+        const data = collider.parent()?.userData as
+          { cameraRoof?: boolean; cameraBuilding?: boolean } | undefined;
+        return !(data?.cameraRoof || (playerRuntime.sheltered && data?.cameraBuilding));
+      }
+    );
     if (profile.projection === 'perspective' && obstruction)
       offset.setLength(Math.max(1.2, obstruction.timeOfImpact - 0.4));
     const desired = focus.clone().add(offset);
@@ -934,9 +957,9 @@ function Player() {
           o.id === 'guardian' ? { ...o, pos: enemyPosition } : o
         ),
         ...state.save.blocks
-          .filter((b) => b.item === 'lamp')
+          .filter((b) => b.item === 'lamp' || b.part === 'gate')
           .map((b) => ({
-            id: `lamp:${b.x}:${b.y}:${b.z}`,
+            id: `${b.part === 'gate' ? 'gate' : 'lamp'}:${b.x}:${b.y}:${b.z}`,
             pos: [b.x + 0.5, b.y + 0.5, b.z + 0.5] as Vec3,
           })),
         ...Object.entries(CREATURES).map(([id, c]) => ({ id: 'creature:' + id, pos: c.pos })),
@@ -1152,26 +1175,57 @@ function Companion({ id, index }: { id: Species; index: number }) {
   ) : null;
 }
 function Buildings() {
+  const gateFloor = useGame((s) => s.gateFloor);
+  const buildPart = useGame((s) => s.buildPart),
+    roofHeight = useGame((s) => s.roofHeight),
+    buildRotation = useGame((s) => s.buildRotation),
+    playerPosition = useGame((s) => s.save.position);
   const blocks = useGame((s) => s.save.blocks),
     build = useGame((s) => s.build),
     selected = useGame((s) => s.selected),
     hotbar = useGame((s) => s.save.hotbar),
     flags = useGame((s) => s.save.flags);
   const [preview, setPreview] = useState<Block | null>(null);
+  const site = useMemo(
+    () => (buildPart === 'home' ? homeSite(blocks, playerPosition, buildRotation) : null),
+    [buildPart, blocks, playerPosition, buildRotation]
+  );
   const item = hotbar[selected];
   const placeable =
-    item && ['block', 'lamp', 'stool', 'statue'].includes(item) ? (item as Block['item']) : 'block';
+    buildPart === 'wall' && item && ['block', 'lamp', 'stool', 'statue'].includes(item)
+      ? (item as Block['item'])
+      : 'block';
   const point = (e: ThreeEvent<PointerEvent>, existing?: Block) => {
     if (!build) return;
     if (e.pointerType === 'touch' && (e.type !== 'pointerup' || touchLook.dragged)) return;
     e.stopPropagation();
-    const normal = e.face?.normal.clone() ?? new THREE.Vector3(0, 1, 0);
+    if (
+      e.type !== 'pointermove' &&
+      ((e.pointerType === 'touch' && touchInput.remove) || e.button === 2)
+    ) {
+      if (existing) useGame.getState().remove(existing);
+      return;
+    }
+    if (buildPart === 'home') return;
+    const normal =
+      e.face?.normal
+        .clone()
+        .applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(e.object.matrixWorld))
+        .normalize() ?? new THREE.Vector3(0, 1, 0);
     const v = e.point.clone().addScaledVector(normal, 0.02);
     const b: Block = {
       x: Math.floor(v.x),
-      y: Math.max(0, Math.floor(v.y)),
+      y:
+        buildPart === 'roof'
+          ? roofHeight
+          : buildPart === 'gate'
+            ? gateFloor
+            : Math.max(0, Math.floor(v.y)),
       z: Math.floor(v.z),
       item: placeable,
+      ...(buildPart === 'roof' || buildPart === 'gate'
+        ? { part: buildPart, rotation: buildRotation }
+        : {}),
     };
     if (e.type === 'pointermove') {
       setPreview(b);
@@ -1200,42 +1254,88 @@ function Buildings() {
         <meshStandardMaterial color="#b1b78d" />
       </mesh>
       {build && <gridHelper args={[16, 16, '#eae0b6', '#d0cca6']} position={[2, 0.025, 27]} />}
-      {blocks.map((b) => (
-        <RigidBody
-          key={`${b.x}:${b.y}:${b.z}`}
-          type="fixed"
-          colliders="cuboid"
-          userData={b.item === 'lamp' ? { interactionId: `lamp:${b.x}:${b.y}:${b.z}` } : {}}
-        >
-          {b.item === 'lamp' && (
-            <Label
-              interactionId={`lamp:${b.x}:${b.y}:${b.z}`}
-              text="Crystal lamp"
-              position={[b.x + 0.5, b.y + 1.5, b.z + 0.5]}
-              size={0.43}
-            />
-          )}
-          <Box
-            position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]}
-            size={b.item === 'block' ? [1, 1, 1] : [0.8, 0.8, 0.8]}
-            color={b.item === 'lamp' ? '#e5d29a' : b.item === 'statue' ? '#a8b9a1' : '#b2936e'}
+      {blocks.map((b) =>
+        b.part === 'gate' ? (
+          <WoodenGate
+            key={`${b.x}:${b.y}:${b.z}`}
+            block={b}
             onPointerMove={(e) => point(e, b)}
             onPointerDown={(e) => point(e, b)}
             onPointerUp={(e) => {
               if (e.pointerType === 'touch') point(e, b);
             }}
           />
-          {b.item === 'lamp' && !flags.includes(`off:lamp:${b.x}:${b.y}:${b.z}`) && (
-            <pointLight
-              position={[b.x + 0.5, b.y + 1, b.z + 0.5]}
-              intensity={2}
-              distance={5}
-              color="#ffe4a5"
-            />
-          )}
-        </RigidBody>
-      ))}
-      {build && preview && (
+        ) : (
+          <RigidBody
+            key={`${b.x}:${b.y}:${b.z}`}
+            type="fixed"
+            colliders="cuboid"
+            userData={{
+              cameraBuilding: true,
+              cameraRoof: b.part === 'roof',
+              ...(b.item === 'lamp' ? { interactionId: `lamp:${b.x}:${b.y}:${b.z}` } : {}),
+            }}
+          >
+            {b.item === 'lamp' && (
+              <Label
+                interactionId={`lamp:${b.x}:${b.y}:${b.z}`}
+                text="Crystal lamp"
+                position={[b.x + 0.5, b.y + 1.5, b.z + 0.5]}
+                size={0.43}
+              />
+            )}
+            {b.part === 'roof' ? (
+              <RoofTile
+                block={b}
+                onPointerMove={(e) => point(e, b)}
+                onPointerDown={(e) => point(e, b)}
+                onPointerUp={(e) => {
+                  if (e.pointerType === 'touch') point(e, b);
+                }}
+              />
+            ) : b.item === 'block' ? (
+              <HousingWall
+                block={b}
+                onPointerMove={(e) => point(e, b)}
+                onPointerDown={(e) => point(e, b)}
+                onPointerUp={(e) => {
+                  if (e.pointerType === 'touch') point(e, b);
+                }}
+              />
+            ) : (
+              <Box
+                position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]}
+                size={[0.8, 0.8, 0.8]}
+                color={b.item === 'lamp' ? '#e5d29a' : b.item === 'statue' ? '#a8b9a1' : '#b2936e'}
+                onPointerMove={(e) => point(e, b)}
+                onPointerDown={(e) => point(e, b)}
+                onPointerUp={(e) => {
+                  if (e.pointerType === 'touch') point(e, b);
+                }}
+              />
+            )}
+            {b.item === 'lamp' && !flags.includes(`off:lamp:${b.x}:${b.y}:${b.z}`) && (
+              <pointLight
+                position={[b.x + 0.5, b.y + 1, b.z + 0.5]}
+                intensity={2}
+                distance={5}
+                color="#ffe4a5"
+              />
+            )}
+          </RigidBody>
+        )
+      )}
+      {build && buildPart === 'home' && site && (
+        <group>
+          {starterHome(...site, buildRotation).map((b) => (
+            <mesh key={`${b.x}:${b.y}:${b.z}`} position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]}>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="#e8d894" wireframe transparent opacity={0.6} />
+            </mesh>
+          ))}
+        </group>
+      )}
+      {build && buildPart !== 'home' && preview && (
         <mesh position={[preview.x + 0.5, preview.y + 0.5, preview.z + 0.5]}>
           <boxGeometry args={[1.01, 1.01, 1.01]} />
           <meshBasicMaterial
@@ -1297,6 +1397,7 @@ function clickWorld(e: ThreeEvent<PointerEvent>) {
           ? npcPosition(id!, useGame.getState().save.playTime)
           : undefined) ??
         OBJECTS.find((o) => o.id === id)?.pos ??
+        buildingTarget(id!, state.save.blocks) ??
         (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
     : undefined;
   const ground = e.ray.intersectPlane(new THREE.Plane(UP, 0), new THREE.Vector3());

@@ -68,12 +68,12 @@ export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
             Math.hypot(b.pos[0] - save.position[0], b.pos[2] - save.position[2])
         )[0];
         if (node) position = node.pos;
-        help = `Collect ${Math.max(0, objective.count - (state.progress[objective.id] ?? 0))} more ${ITEMS[target as ItemId]?.name ?? target}. Click the marked resource or press F nearby. ${['ore', 'crystal', 'fragment'].includes(target) ? 'Bring a basic pickaxe. ' : ''}${available.length ? '' : 'The nodes are regrowing; timers advance during active play.'}`;
+        help = `Collect ${Math.max(0, objective.count - (state.progress[objective.id] ?? 0))} more ${ITEMS[target as ItemId]?.name ?? target}. Gather after accepting this mission. Click the marked resource or press F nearby. ${['ore', 'crystal', 'fragment'].includes(target) ? 'Bring a basic pickaxe. ' : ''}${available.length ? '' : 'The nodes are regrowing; timers advance during active play.'}`;
       }
       if (objective.event === 'craft') {
         position = OBJECTS.find((o) => o.id === 'craft')!.pos;
         const recipe = RECIPES.find((r) => r.id === target)!;
-        help = `Visit Bruno’s crafting bench. ${ITEMS[recipe.id].name}: ${Object.entries(
+        help = `Craft after accepting this mission at Bruno’s crafting bench. ${ITEMS[recipe.id].name}: ${Object.entries(
           recipe.ingredients
         )
           .map(
@@ -114,7 +114,7 @@ export function missionGuidance(save: Save, onlyQuest?: string): MissionHint[] {
       if (objective.event === 'shelter') {
         position = [2, 0, 27];
         help =
-          'At your housing plot, press B. Build at least 12 structural blocks: three walls two blocks high around a usable interior cell, a roof at height 2, and a clear doorway. Twelve scattered blocks do not count.';
+          'Accept Home Sweet Home before crafting its 12 required wooden blocks. On your housing plot, open Build from Menu (B on desktop). Choose Wall, Roof or Gate. Roof height defaults to 2; gates open with Interact. For a complete house, select Starter home and build the outlined 24-block design (12 wood, crafted at Bruno’s bench). Keep a clear doorway and approach. Larger enclosed rooms and raised floors also count; scattered blocks do not.';
       }
       if (objective.event === 'repair') {
         position = OBJECTS.find((o) => o.id === 'repair')!.pos;

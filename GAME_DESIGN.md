@@ -28,7 +28,7 @@ Explore → meet villagers → accept missions → gather → craft → befriend
 - Lamp lights toggle through nearby interaction and persist their state.
 - In build mode middle-mouse dragging controls the camera because right click removes blocks.
 - Q uses the first creature ability; Shift+E preserves interaction while adding the second ability; R uses the ultimate.
-- Shelter validation currently recognizes a minimal one-cell interior with headroom, three solid neighboring walls, a roof, an open doorway, and a clear approach. Larger arbitrary floorplans require expanded validation.
+- Shelter validation recognises connected roofed rooms, including larger layouts and raised floors, with two blocks of headroom, enclosing walls, a usable doorway and a clear approach. Legacy cube homes remain valid. Build mode offers Wall, Roof, Gate and a 24-block starter-home preview.
 
 ## Required work still outstanding
 

@@ -20,6 +20,9 @@ export default function TouchControls() {
   const visitor = useGame((s) => s.visitor);
   const trayOpen = useGame((s) => s.abilityTrayOpen);
   const target = useGame((s) => s.target);
+  const gateOpen = useGame(
+    (s) => !!s.target?.startsWith('gate:') && s.save.flags.includes('open:' + s.target)
+  );
   const atHome = useGame(
     (s) =>
       !!s.target &&
@@ -227,7 +230,13 @@ export default function TouchControls() {
               className="touch-interact"
               data-available={!!target}
               disabled={!!visitor && visitor === target}
-              aria-label="Interact or gather"
+              aria-label={
+                target?.startsWith('gate:')
+                  ? gateOpen
+                    ? 'Close wooden gate'
+                    : 'Open wooden gate'
+                  : 'Interact or gather'
+              }
               onClick={() => {
                 navigation.destination = null;
                 action.interact();
@@ -239,11 +248,15 @@ export default function TouchControls() {
                   ? 'Coming…'
                   : atHome
                     ? 'Knock'
-                    : NPCS.some((n) => n.id === target)
-                      ? 'Talk'
-                      : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
-                        ? 'Gather'
-                        : 'Use'}
+                    : target?.startsWith('gate:')
+                      ? gateOpen
+                        ? 'Close'
+                        : 'Open'
+                      : NPCS.some((n) => n.id === target)
+                        ? 'Talk'
+                        : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
+                          ? 'Gather'
+                          : 'Use'}
               </small>
             </button>
             <button

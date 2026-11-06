@@ -82,3 +82,9 @@ The Living World reference is in [docs/LIVING_WORLD_SPEC.md](docs/LIVING_WORLD_S
 ## Compact HUD and side menu
 
 Use **Menu** for backpack, journal, collection, squad, commands, camera selection, building, map and settings. Mobile pet details are collapsed by default: tap the pet summary or blue **Ability** button for cooldowns, spells and squad switching. Combat controls remain beside the joystick; building mode replaces them with placement controls. Settings → Interface size offers 90%, 100%, 115% and 130% text scaling. Track a mission in the journal or cycle active missions from the gold tracker. See [UI_REDESIGN.md](UI_REDESIGN.md).
+
+## Building your mission 9 home
+
+Accept **Home Sweet Home** from Bruno before crafting its required blocks. At Bruno’s bench, craft 24 wooden blocks from 12 wood for the starter design. Go to your homestead, open **Menu → Build at your homestead**, choose **Starter home**, review the outline and cost, then build. It includes walls, a roof and an openable gate.
+
+For your own design, select **Wall**, **Roof** or **Gate**. Roof height defaults to 2; stack walls two blocks high first. Gate floor defaults to ground level and can be changed for raised floors. Gates open with E, a click, or the mobile Open button. A clear open doorway also counts, so older homes do not need a gate retrofit. Larger roofed rooms and raised floors are supported. Return to Bruno when the tracker shows a reward. See [the ten-mission audit](MISSION_AUDIT.md) for flow checks and recovery behaviour.

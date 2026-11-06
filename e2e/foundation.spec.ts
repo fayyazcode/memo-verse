@@ -177,7 +177,7 @@ test('a player can place a real block on the housing plot and reload it', async 
   await page.waitForTimeout(3000);
   await page.keyboard.press('Digit4');
   await page.keyboard.press('KeyB');
-  await expect(page.locator('.build-banner')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'House building tools' })).toBeVisible();
   await page.mouse.click(720, 450);
   await page.waitForTimeout(500);
   await page.keyboard.press('Escape');

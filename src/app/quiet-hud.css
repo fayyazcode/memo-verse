@@ -440,3 +440,103 @@ iframe[title='Netlify Badge'] {
     display: none;
   }
 }
+.building-tools {
+  position: absolute;
+  left: 30px;
+  top: 200px;
+  width: 300px;
+  z-index: 5;
+  pointer-events: auto;
+  background: #fff9e9f5;
+  color: #294432;
+  border: 1px solid #fffbea;
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 4px 18px #29452b22;
+}
+.building-part-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.building-part-options button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 48px;
+  font-size: 12px;
+  border: 1px solid #c3cbaa;
+  border-radius: 12px;
+  padding: 4px;
+}
+.building-part-options button[aria-pressed='true'] {
+  background: #315d40;
+  color: #fff7df;
+}
+.building-materials {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 34px;
+  font-size: 13px;
+}
+.building-materials button,
+.building-materials select {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid #cad0b8;
+  border-radius: 10px;
+}
+.building-tools small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.build-starter {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #a1b98e;
+  background: #315d40;
+  color: #fff7df;
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.build-starter:disabled {
+  background: #dde3ce;
+  color: #5b6955;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .building-tools {
+    left: 12px;
+    top: calc(192px + env(safe-area-inset-top));
+    width: min(300px, calc(100vw - 24px));
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .building-tools {
+    left: auto;
+    right: 12px;
+    top: 62px;
+    width: min(360px, calc(100vw - 230px));
+  }
+}
+.building-materials label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .building-tools {
+    max-height: 132px;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+}

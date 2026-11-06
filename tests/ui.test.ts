@@ -72,3 +72,18 @@ describe('quiet play notifications', () => {
       expect(importantNotice(message)).toBe(true);
   });
 });
+
+it('uses live shelter validity for active checklists while preserving completed mission achievements', async () => {
+  const { objectiveValue } = await import('../src/game/ui');
+  const { QUESTS } = await import('../src/game/data');
+  const s = freshSave();
+  s.quests.q09 = { status: 'active', progress: { plot: 1, craft: 12, shelter: 1 } };
+  const shelter = QUESTS.find((q) => q.id === 'q09')!.objectives.find(
+    (o) => o.event === 'shelter'
+  )!;
+  expect(objectiveValue(s, 'q09', shelter)).toBe(0);
+  expect(missionProgress(s, 'q09').next?.id).toBe('shelter');
+  s.quests.q09.status = 'complete';
+  expect(objectiveValue(s, 'q09', shelter)).toBe(1);
+  expect(missionProgress(s, 'q09').next).toBeUndefined();
+});

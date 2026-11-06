@@ -42,9 +42,9 @@ test('a player can locate the moonflower from the map and water it with Aquabub'
   await expect(page.locator('.map-mission-info')).toContainText('east end of the wooden bridge');
   await page.keyboard.press('Escape');
   await page.keyboard.press('KeyE');
-  await expect(page.getByRole('status')).toContainText('Aquabub used');
+  await expect(page.locator('.toast')).toHaveCount(0);
   await expect(page.locator('.interaction')).toContainText('Moonflower · watered');
-  await expect(page.locator('.return-note')).toContainText('Luna');
+  await expect(page.getByRole('button', { name: 'Open tracked mission' })).toContainText('REWARD');
   await page.keyboard.press('KeyM');
   await expect(
     page.getByRole('button', { name: 'Mission destination: Water the marked plant', exact: true })

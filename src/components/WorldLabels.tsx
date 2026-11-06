@@ -167,11 +167,16 @@ export function WorldLabelLayout() {
     const placed: { x: number; y: number; width: number; height: number }[] = [player];
     if (candidates.length)
       for (const node of document.querySelectorAll(
-        '.game-top, .player-card, .tracked-mission, .companion-summary, .right-hud > button, .coin-pill, .touch-actions, .virtual-joystick, .hotbar, .interaction'
+        '#mission-direction, .game-top, .player-card, .tracked-mission, .companion-summary, .right-hud > button, .coin-pill, .touch-actions, .virtual-joystick, .hotbar, .interaction'
       )) {
         const rect = node.getBoundingClientRect();
         if (rect.width && rect.height)
-          placed.push({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
+          placed.push({
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height + (node.id === 'mission-direction' ? 22 : 0),
+          });
       }
     for (const c of candidates.sort((a, b) => a.distance - b.distance)) {
       const e = c.entry;
