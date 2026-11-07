@@ -10,6 +10,8 @@ export const playerRuntime = {
   action: 'idle',
   actionUntil: 0,
   actionStarted: 0,
+  aim: [0, 1, 6] as [number, number, number],
+  hurtUntil: 0,
   harvest: null as null | {
     id: string;
     item: import('./data').ItemId;

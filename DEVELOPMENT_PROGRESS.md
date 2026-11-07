@@ -117,3 +117,7 @@ Added Monster Meadow east of the homestead: a fenced entrance, readable guide si
 ### Mobile construction action dock
 
 Added a direct Build action beside the primary combat controls, reduced circular buttons, and a construction-only dock at the same lower-right location. Reuses the existing building logic and starter-home preview without changing save data, building unlocks, material costs or mission requirements.
+
+### Independent player combat and switchable weapons
+
+Fixed the primary Attack action requiring a healthy companion to cause damage. Players now use a visible sword or bow, with range, cooldowns, auto-facing, sword swings, bow pose and straight moving arrows. Mobile centre toggle, G and backpack equipment choices switch weapons. Healthy companions retain their basic command and elemental abilities. Monster damage now reaches the selected nearby actor, and player hits show a brief ground flash. Existing collection, farming rewards, shields, defeat recovery and finale completion are reused.

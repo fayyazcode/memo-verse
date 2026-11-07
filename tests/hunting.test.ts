@@ -81,7 +81,7 @@ describe('Monster Meadow repeatable combat', () => {
     h.cooldown[0] = 0;
     expect(advanceHunting(h, 0.1, 0, [17, 1, 23])).toEqual([]);
     expect(h.windup[0]).toBe(0.65);
-    expect(advanceHunting(h, 0.65, 0.1, [17, 1, 23])).toEqual([{ index: 0, damage: 3 }]);
+    expect(advanceHunting(h, 0.65, 0.1, [17, 1, 23])).toEqual([{ index: 0, damage: 3, victim: 0 }]);
     h.cooldown[0] = 0;
     advanceHunting(h, 0.1, 1, [17, 1, 23]);
     expect(advanceHunting(h, 0.65, 1.1, [12, 1, 23])).toEqual([]);

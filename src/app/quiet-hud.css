@@ -807,3 +807,56 @@ iframe[title='Netlify Badge'] {
     width: 236px;
   }
 }
+
+.weapon-loadout {
+  background: #f7f2df;
+  border: 1px solid #bdc9a6;
+  border-radius: 18px;
+  padding: 12px;
+  margin: 0 0 16px;
+}
+.weapon-loadout p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0 10px;
+}
+.weapon-loadout > div {
+  display: flex;
+  gap: 8px;
+}
+.weapon-loadout button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 48px;
+  border: 1px solid #bacba3;
+  border-radius: 14px;
+  padding: 9px 12px;
+}
+.weapon-loadout button small {
+  font-size: 12px;
+}
+.weapon-loadout button[aria-pressed='true'] {
+  background: #315c42;
+  color: #fff8e0;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .touch-action-dock .touch-actions .touch-weapon {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    left: calc(var(--action-size) * 1.5 - 17px);
+    top: calc(var(--action-size) * 1.5 - 17px);
+    background: #fbf4dd;
+    color: #31513c;
+    border-color: #b9cba1;
+  }
+  .touch-action-dock .touch-actions .touch-weapon small {
+    font-size: 10px;
+  }
+  .touch-action-dock .touch-actions .touch-weapon svg {
+    width: 19px;
+    height: 19px;
+  }
+}

@@ -85,25 +85,33 @@ export function Character({
           ? villagerId === 'luna' || villagerId === 'foxy'
             ? -0.95 + Math.sin(t * 2) * 0.12
             : -0.7 + Math.sin(t * 4) * 0.65
-          : action === 'attack'
-            ? -0.3 - attackPose(Date.now(), playerRuntime.actionStarted) * 1.7 * (i === 1 ? 1 : 0.4)
-            : action === 'mine'
+          : action === 'shoot'
+            ? -1.3 +
+              (i === 1
+                ? Math.sin(
+                    Math.min(1, (Date.now() - playerRuntime.actionStarted) / 650) * Math.PI
+                  ) * 0.3
+                : 0)
+            : action === 'attack'
               ? -0.3 -
-                Math.sin(
-                  Math.min(1, (Date.now() - playerRuntime.actionStarted) / 1100) * Math.PI * 3
-                ) *
-                  1.2
-              : action === 'pick'
-                ? -1.35
-                : action === 'gather'
-                  ? Math.sin(t * 18) * 0.7
-                  : action === 'interact'
-                    ? -1
-                    : air
-                      ? -0.6
-                      : walking
-                        ? -swing * 0.8 * sign
-                        : 0;
+                attackPose(Date.now(), playerRuntime.actionStarted) * 1.7 * (i === 1 ? 1 : 0.4)
+              : action === 'mine'
+                ? -0.3 -
+                  Math.sin(
+                    Math.min(1, (Date.now() - playerRuntime.actionStarted) / 1100) * Math.PI * 3
+                  ) *
+                    1.2
+                : action === 'pick'
+                  ? -1.35
+                  : action === 'gather'
+                    ? Math.sin(t * 18) * 0.7
+                    : action === 'interact'
+                      ? -1
+                      : air
+                        ? -0.6
+                        : walking
+                          ? -swing * 0.8 * sign
+                          : 0;
         arm.current.rotation.z = sign * (action === 'celebrate' ? 2.5 : air ? 0.6 : 0.16);
       }
     });

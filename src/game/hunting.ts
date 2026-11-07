@@ -103,8 +103,8 @@ export function advanceHunting(
   time: number,
   player: Vec3,
   allies: Vec3[] = []
-): { index: number; damage: number }[] {
-  const hits: { index: number; damage: number }[] = [];
+): { index: number; damage: number; victim: number }[] {
+  const hits: { index: number; damage: number; victim: number }[] = [];
   MONSTERS.forEach((m, i) => {
     if (h.hp[i] === 0) {
       h.respawn[i] = Math.max(0, h.respawn[i] - dt);
@@ -118,9 +118,14 @@ export function advanceHunting(
     }
     const p = h.positions[i];
     const nearby = [player, ...allies]
-      .filter(inMeadow)
-      .sort((a, b) => Math.hypot(a[0] - p[0], a[2] - p[2]) - Math.hypot(b[0] - p[0], b[2] - p[2]));
-    const target = nearby[0] ?? player,
+      .map((position, victim) => ({ position, victim }))
+      .filter((t) => inMeadow(t.position))
+      .sort(
+        (a, b) =>
+          Math.hypot(a.position[0] - p[0], a.position[2] - p[2]) -
+          Math.hypot(b.position[0] - p[0], b.position[2] - p[2])
+      );
+    const target = nearby[0]?.position ?? player,
       gap = Math.hypot(p[0] - target[0], p[2] - target[2]);
     const engaged = nearby.length > 0 && gap < 6;
     const goal: Vec3 = engaged
@@ -129,7 +134,8 @@ export function advanceHunting(
     if (h.windup[i] > 0) {
       h.windup[i] = Math.max(0, h.windup[i] - dt);
       if (h.windup[i] === 0) {
-        if (engaged && gap < 2.25) hits.push({ index: i, damage: m.damage });
+        if (engaged && gap < 2.25)
+          hits.push({ index: i, damage: m.damage, victim: nearby[0].victim });
         h.cooldown[i] = 2.5;
       }
       return;

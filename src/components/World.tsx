@@ -878,12 +878,13 @@ function Player() {
     if (
       visual.current &&
       Date.now() < playerRuntime.actionUntil &&
-      playerRuntime.action === 'attack' &&
-      state.save.flags.includes('repaired') &&
-      Math.hypot(p.x - enemyPosition[0], p.z - enemyPosition[2]) < 6
+      ['attack', 'shoot'].includes(playerRuntime.action)
     )
-      visual.current.rotation.y = Math.atan2(enemyPosition[0] - p.x, enemyPosition[2] - p.z);
-    if (visual.current && isMoving) {
+      visual.current.rotation.y = Math.atan2(
+        playerRuntime.aim[0] - p.x,
+        playerRuntime.aim[2] - p.z
+      );
+    if (visual.current && isMoving && Date.now() >= playerRuntime.actionUntil) {
       const target = Math.atan2(dir.x, dir.z);
       visual.current.rotation.y +=
         Math.atan2(

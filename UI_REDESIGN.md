@@ -47,3 +47,7 @@ The supplied reference now guides overhead tags: cream rounded plates, moss-gree
 ### Compact circular action dock
 
 Mobile play groups Build, Attack, Ability, Gather and Jump around a small circular cluster. Build respects Bruno’s existing unlock. Entering construction replaces combat actions with round Place, Remove and Exit buttons, with Wall, Roof, Gate and Starter home directly above them. The same dock retains material counts, roof height, gate floor, piece rotation and camera rotation. Selecting a piece returns to Place; leaving or re-entering construction clears held touch input and removal mode. Desktop building tools and keyboard controls remain available.
+
+### Weapon switching and combat feedback
+
+The centre of the mobile action cluster is a 44px Sword/Bow switch. The primary attack changes to Shoot for the bow and displays its short cooldown while unavailable. Weapon choices and range descriptions also appear in Backpack → Adventure weapons; G switches weapons and H attacks on keyboard. Selecting a hotbar item restores its existing held-item model, while attacks draw the equipped weapon. The player turns toward the aimed hostile; attacks use a sword swing or bow pose, moving arrows, live target health and a brief player-damage ring without routine popups.

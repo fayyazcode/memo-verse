@@ -1,3 +1,4 @@
+import { strike, flyArrows, weaponOf, WEAPONS, type Weapon, type Arrow } from './weapons';
 import { MONSTERS } from './hunting';
 import { starterHome, canBuildHome, type BuildPart } from './building';
 import {
@@ -73,6 +74,7 @@ export type Panel =
 export type QuestState = { status: 'active' | 'complete'; progress: Record<string, number> };
 export type Save = {
   version: 1;
+  weapon?: Weapon;
   revision: number;
   position: Vec3;
   hp: number;
@@ -155,6 +157,8 @@ export const defaultSettings: Settings = {
 export function validateSave(value: unknown): Save {
   if (!value || typeof value !== 'object') throw Error('Invalid save file.');
   const s = value as Save;
+  if (s.weapon !== undefined && !['sword', 'bow'].includes(s.weapon))
+    throw Error('Invalid saved weapon.');
   if (s.version !== 1)
     throw Error('This save version is not supported. Your existing save has been preserved.');
   if (
@@ -403,6 +407,9 @@ export type GameStore = {
   feed: (id: Species) => void;
   useAbility: (id: string) => void;
   attack: (elemental?: boolean) => void;
+  switchWeapon: (weapon?: Weapon) => void;
+  weaponDrawn: boolean;
+  arrows: Arrow[];
   discover: (id: string) => void;
   place: (b: Block) => void;
   buildHome: (x: number, z: number) => void;
@@ -436,6 +443,8 @@ export const useGame = create<GameStore>((set, get) => ({
   gateFloor: 0,
   abilityTrayOpen: false,
   selected: 0,
+  weaponDrawn: true,
+  arrows: [],
   command: 'follow',
   settings: defaultSettings,
   notify: (notice) => {
@@ -492,6 +501,8 @@ export const useGame = create<GameStore>((set, get) => ({
         dialogue: null,
         command: 'follow',
         build: false,
+        arrows: [],
+        weaponDrawn: true,
       });
       sound('friend', get().settings.effects);
       await get().persist();
@@ -508,6 +519,8 @@ export const useGame = create<GameStore>((set, get) => ({
       dialogue: null,
       visitor: null,
       build: false,
+      arrows: [],
+      weaponDrawn: true,
     });
   },
   setPosition: (position) => set({ save: { ...get().save, position } }),
@@ -1035,19 +1048,65 @@ export const useGame = create<GameStore>((set, get) => ({
     sound('friend', get().settings.effects);
     void get().persist();
   },
+  switchWeapon: (weapon) => {
+    const state = get();
+    if (
+      !state.started ||
+      state.build ||
+      state.dialogue ||
+      (state.panel && state.panel !== 'inventory')
+    )
+      return;
+    const selected = weapon ?? (weaponOf(state.save) === 'sword' ? 'bow' : 'sword');
+    set({ save: { ...state.save, weapon: selected }, weaponDrawn: true });
+    void get().persist();
+  },
   attack: (elemental = false) => {
     const state = get(),
       s = state.save;
-    if (state.panel || state.dialogue || (elemental ? s.abilityCooldown : s.attackCooldown) > 0)
+    if (
+      !state.started ||
+      state.panel ||
+      state.dialogue ||
+      state.build ||
+      (typeof document !== 'undefined' && document.hidden)
+    )
       return;
-    playerRuntime.action = 'attack';
-    playerRuntime.actionStarted = Date.now();
-    playerRuntime.actionUntil = Date.now() + 650;
-    if (!s.active || !s.creatures[s.active]?.hp) {
-      get().notify('Summon a healthy companion first.');
+    if (elemental) {
+      get().castAbility('Q');
       return;
     }
-    get().castAbility(elemental ? 'Q' : 'basic');
+    if (s.attackCooldown > 0) return;
+    const result = strike(s, state.target ?? squadOf(s).target, playerRuntime.heading);
+    playerRuntime.action = weaponOf(s) === 'bow' ? 'shoot' : 'attack';
+    playerRuntime.actionStarted = Date.now();
+    playerRuntime.actionUntil = Date.now() + 650;
+    playerRuntime.aim = [...result.end];
+    // Keep the original companion basic command, with its own per-creature cooldown.
+    let next = result.save;
+    if (s.active && s.creatures[s.active]?.hp) {
+      const companion = cast(
+        next,
+        s.active,
+        'basic',
+        result.target ?? undefined,
+        combatPositions()
+      );
+      if (!companion.error) {
+        next = companion.save;
+        showEffects(companion.effects);
+      }
+    }
+    next.attackCooldown = WEAPONS[weaponOf(s)].cooldown;
+    if (!s.flags.includes('guardianDefeated') && next.flags.includes('guardianDefeated'))
+      next = event(next, 'defeat', 'guardian');
+    set({
+      save: next,
+      weaponDrawn: true,
+      arrows: result.arrow ? [...state.arrows, result.arrow].slice(-8) : state.arrows,
+    });
+    sound('hit', state.settings.effects);
+    void get().persist();
   },
   discover: (id) => {
     const s = get().save;
@@ -1135,7 +1194,8 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     const resolved = advanceSquad(state.save, dt, combatPositions());
-    let s = resolved.save;
+    const flight = flyArrows(resolved.save, state.arrows, dt);
+    let s = flight.save;
     if (!state.save.flags.includes('guardianDefeated') && s.flags.includes('guardianDefeated'))
       s = event(s, 'defeat', 'guardian');
     showEffects(resolved.effects);
@@ -1178,9 +1238,11 @@ export const useGame = create<GameStore>((set, get) => ({
       hp = s.hp;
       creatures = s.creatures;
     }
+    if (hp < state.save.hp) playerRuntime.hurtUntil = Date.now() + 350;
     const defeated = hp === 0;
     if (defeated) get().notify('You woke up safely in Momo Village.');
     set({
+      arrows: defeated ? [] : flight.arrows,
       save: {
         ...s,
         creatures,

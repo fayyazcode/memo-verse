@@ -522,17 +522,17 @@ const clone = (s: Save): Save => ({
   creatures: structuredClone(s.creatures),
   squad: structuredClone(squadOf(s)),
 });
-function damage(
+export function damage(
   s: Save,
-  id: Species,
+  id: Species | null,
   target: ReturnType<typeof targets>[number],
   power: number,
   element: string,
   positions: Positions
 ): Save {
   const q = s.squad!,
-    c = s.creatures[id]!,
-    m = (q.members[id] ??= newMember());
+    c = id ? s.creatures[id]! : null,
+    m = id ? (q.members[id] ??= newMember()) : null;
   const warm =
     id === 'emberfox' &&
     q.zones.some(
@@ -542,7 +542,7 @@ function damage(
         distance(z.position, positionOf(s, id, positions)) <= 5
     );
   const amount = elementalDamage(
-    Math.round(power * (warm ? 1.1 : 1) + (id === 'zaplet' ? m.static : 0)),
+    Math.round(power * (warm ? 1.1 : 1) + (id === 'zaplet' ? m!.static : 0)),
     element,
     target.element
   );
@@ -556,7 +556,7 @@ function damage(
     if (hp === 0 && !s.flags.includes('guardianDefeated')) {
       s.flags = [...s.flags, 'guardianDefeated'];
       s.coins += 80;
-      c.xp += 120;
+      if (c) c.xp += 120;
       for (const participant of q.equipped)
         if (participant !== id && s.creatures[participant]!.hp > 0)
           s.creatures[participant]!.xp += 60;
@@ -583,7 +583,7 @@ function damage(
     q.training[i] = hp;
     if (hp === 0) q.trainingRespawn[i] = 5;
   }
-  if (hp === 0) m.charge = Math.min(100, m.charge + 15);
+  if (hp === 0 && m) m.charge = Math.min(100, m.charge + 15);
   return s;
 }
 export function cast(
@@ -777,29 +777,15 @@ export function advanceSquad(s: Save, dt: number, positions: Positions = {}): Re
     if (v > 0 && t === 0) q.training[i] = 240;
     return t;
   });
+  const allies = q.equipped.filter((id) => next.creatures[id]!.hp > 0);
   for (const hit of advanceHunting(
     q.hunting!,
     dt,
     next.playTime,
     next.position,
-    q.equipped
-      .filter((id) => next.creatures[id]!.hp > 0)
-      .map((id) => positionOf(next, id, positions))
+    allies.map((id) => positionOf(next, id, positions))
   )) {
-    const monster = q.hunting!.positions[hit.index];
-    const near = q.equipped.filter(
-      (id) =>
-        next.creatures[id]!.hp > 0 &&
-        inMeadow(positionOf(next, id, positions)) &&
-        distance(positionOf(next, id, positions), monster) < 2.4
-    );
-    const victim =
-      near.find((id) => id === 'mosshell') ??
-      near.find((id) => id === next.active) ??
-      near[0] ??
-      null;
-    if (!victim && (!inMeadow(next.position) || distance(next.position, monster) >= 2.4)) continue;
-    absorb(next, victim, hit.damage);
+    absorb(next, hit.victim === 0 ? null : allies[hit.victim - 1], hit.damage);
   }
   for (const zone of q.zones) {
     zone.remaining = Math.max(0, zone.remaining - dt);

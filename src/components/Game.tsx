@@ -1,4 +1,5 @@
 'use client';
+import WeaponSwitch from './WeaponSwitch';
 import { MONSTERS, MEADOW } from '@/game/hunting';
 import { npcPosition, villagerPose } from '@/game/villagers';
 import GameMenu from './GameMenu';
@@ -793,7 +794,7 @@ function Hud() {
               <button
                 key={i}
                 className={`hotbar-slot ${selected === i ? 'selected' : ''}`}
-                onClick={() => useGame.setState({ selected: i })}
+                onClick={() => useGame.setState({ selected: i, weaponDrawn: false })}
                 aria-label={`Hotbar ${i + 1}${item ? ' ' + ITEMS[item].name : ''}`}
               >
                 <small>{i + 1}</small>
@@ -925,6 +926,7 @@ function Inventory() {
         All the little things you’ve found along the way. Select an item to assign it to hotbar slot{' '}
         {selected + 1}.
       </p>
+      <WeaponSwitch chooser />
       <div className="inventory-grid">
         {Array.from({ length: 24 }, (_, i) => {
           const stack = inventory[i];
@@ -938,7 +940,7 @@ function Inventory() {
                 const state = useGame.getState(),
                   hotbar = [...state.save.hotbar];
                 hotbar[selected] = stack.item;
-                useGame.setState({ save: { ...state.save, hotbar } });
+                useGame.setState({ save: { ...state.save, hotbar }, weaponDrawn: false });
                 void state.persist();
               }}
             >
@@ -1627,9 +1629,11 @@ function MeadowGuide() {
   return (
     <div className="meadow-guide">
       <p className="panel-intro">
-        East of your homestead, through the gap in the wooden fence. Bring a healthy companion and
-        use Attack or an ability. Outside the fence, monsters cannot hurt the wanderer. Use Retreat
-        or Recall if companions need a break.
+        East of your homestead, through the gap in the wooden fence. Use your sword up close or
+        switch to the bow for ranged shots. A companion is optional. Tap the centre weapon button or
+        press G to switch, and press H to attack on keyboard. Your backpack also has weapon choices.
+        Outside the fence, monsters cannot hurt the wanderer. Use Retreat or Recall if companions
+        need a break.
       </p>
       <p>
         Watch the amber ring: move away before a monster strikes. Collect its loot pouch with
@@ -1890,6 +1894,16 @@ export default function Game() {
         state.cycleCompanion(binding === bindings.next ? 1 : -1);
         return;
       }
+      if (e.code === 'KeyH') {
+        e.preventDefault();
+        state.attack();
+        return;
+      }
+      if (e.code === 'KeyG') {
+        e.preventDefault();
+        state.switchWeapon();
+        return;
+      }
       if (e.code === 'KeyE' || e.code === 'KeyF') state.interact();
       if (e.code === 'KeyB') {
         if (state.save.quests.q02?.status !== 'complete') {
@@ -1898,7 +1912,8 @@ export default function Game() {
         }
         useGame.setState({ build: !state.build });
       }
-      if (/^Digit[1-6]$/.test(e.code)) useGame.setState({ selected: Number(e.code.slice(-1)) - 1 });
+      if (/^Digit[1-6]$/.test(e.code))
+        useGame.setState({ selected: Number(e.code.slice(-1)) - 1, weaponDrawn: false });
     };
     const keyup = (e: KeyboardEvent) => keys.delete(e.code);
     const blur = () => {
@@ -1927,7 +1942,10 @@ export default function Game() {
         useGame.getState().dialogue
       )
         return;
-      useGame.setState((s) => ({ selected: (s.selected + (e.deltaY > 0 ? 1 : 5)) % 6 }));
+      useGame.setState((s) => ({
+        selected: (s.selected + (e.deltaY > 0 ? 1 : 5)) % 6,
+        weaponDrawn: false,
+      }));
     };
     const context = (e: MouseEvent) => {
       if ((e.target as HTMLElement).tagName === 'CANVAS') e.preventDefault();

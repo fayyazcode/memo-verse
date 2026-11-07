@@ -190,7 +190,7 @@ export function WorldLabelLayout() {
       );
       point.project(camera);
       if (
-        distance > (entry.kind === 'companion' || entry.kind === 'enemy' ? 9 : 4.5) ||
+        distance > (entry.kind === 'enemy' ? 12 : entry.kind === 'companion' ? 9 : 4.5) ||
         point.z < -1 ||
         point.z > 1 ||
         Math.abs(point.x) > 1.1 ||

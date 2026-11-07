@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { ArrowUp, Footprints, Hand, Hammer, LogOut, Sparkles, Swords } from 'lucide-react';
+import WeaponSwitch, { Bow } from './WeaponSwitch';
+import { weaponOf, WEAPONS } from '@/game/weapons';
 import BuildingTools from './BuildingTools';
 import { useGame } from '@/game/store';
 import { MONSTERS } from '@/game/hunting';
@@ -10,6 +12,8 @@ import { villagerPose } from '@/game/villagers';
 import { navigation, motion } from '@/game/input';
 import { joystickVector, resetTouch, touchInput, touchLook } from '@/game/touch';
 export default function TouchControls() {
+  const weapon = useGame((s) => weaponOf(s.save));
+  const attackCooldown = useGame((s) => s.save.attackCooldown);
   const visitor = useGame((s) => s.visitor);
   const trayOpen = useGame((s) => s.abilityTrayOpen);
   const target = useGame((s) => s.target);
@@ -203,6 +207,7 @@ export default function TouchControls() {
             </>
           ) : (
             <>
+              <WeaponSwitch />
               <button
                 className="touch-build"
                 aria-label="Enter building mode"
@@ -221,10 +226,18 @@ export default function TouchControls() {
               <button
                 className="touch-attack"
                 aria-label="Basic attack"
+                title={`${WEAPONS[weapon].name} · ${WEAPONS[weapon].range}m range`}
+                disabled={attackCooldown > 0}
                 onClick={() => action.attack()}
               >
-                <Swords size={19} />
-                <small>Attack</small>
+                {weapon === 'sword' ? <Swords size={19} /> : <Bow size={19} />}
+                <small>
+                  {attackCooldown > 0
+                    ? `${attackCooldown.toFixed(1)}s`
+                    : weapon === 'bow'
+                      ? 'Shoot'
+                      : 'Attack'}
+                </small>
               </button>
               <button
                 className="touch-ability"

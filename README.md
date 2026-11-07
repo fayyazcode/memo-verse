@@ -91,8 +91,8 @@ For your own design, select **Wall**, **Roof** or **Gate**. Roof height defaults
 
 ## Monster Meadow
 
-Find the fenced meadow **east of your homestead**, or choose **Menu → Monster Meadow** for its guide. The sword marker on the full map opens the same guide. Enter through the north gap with a healthy companion, use Attack/abilities, and move away from amber attack rings.
+Find the fenced meadow **east of your homestead**, or choose **Menu → Monster Meadow** for its guide. The sword marker on the full map opens the same guide. Enter through the north gap, use your sword or bow, and move away from amber attack rings. Both weapons are available as adventure equipment without a companion or ammo. Switch using the centre of the mobile action cluster, G on keyboard, or Backpack → Adventure weapons. Press H to attack on keyboard. Sword range is 2.8m; bow range is 11m with straight moving arrows. A healthy companion still joins your basic attacks and provides its existing abilities.
 
-Defeated monsters give coins and companion XP. Use Interact/Collect on the loot pouch for materials. Monsters respawn after 20–30 active-play seconds once their pouch is collected; menus and time away pause the timer. Clear bag space if a pouch is waiting. Village healing remains free. These battles preserve the Guardian encounter and do not replace mission gathering objectives.
+Defeated monsters give coins, player XP and XP to equipped companions. Use Interact/Collect on the loot pouch for materials. Monsters respawn after 20–30 active-play seconds once their pouch is collected; menus and time away pause the timer. Clear bag space if a pouch is waiting. Village healing remains free. These battles preserve the Guardian encounter and do not replace mission gathering objectives.
 
 Player and active-companion name plates use the cream reference style. Companion plates show an original portrait, level and actual health. Other names stay limited to nearby interaction targets or the focused enemy.
