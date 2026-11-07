@@ -96,3 +96,9 @@ Find the fenced meadow **east of your homestead**, or choose **Menu → Monster 
 Defeated monsters give coins, player XP and XP to equipped companions. Use Interact/Collect on the loot pouch for materials. Monsters respawn after 20–30 active-play seconds once their pouch is collected; menus and time away pause the timer. Clear bag space if a pouch is waiting. Village healing remains free. These battles preserve the Guardian encounter and do not replace mission gathering objectives.
 
 Player and active-companion name plates use the cream reference style. Companion plates show an original portrait, level and actual health. Other names stay limited to nearby interaction targets or the focused enemy.
+
+## Versus Arena
+
+Menu → **Versus Arena** saves your adventure and opens real-player duels. Choose **Quick Match** to find another waiting player, **Create room** to invite a friend, or **Join friend** with a room code. Both players ready up for an equal-health sword/bow match, with rematches and reconnect support. Adventure progress and inventory stay unchanged.
+
+The multiplayer server runs separately: `npm run arena:build && npm run arena:start`. Start the frontend normally in another terminal. Public Netlify play requires deploying that server and rebuilding the frontend with its `NEXT_PUBLIC_ARENA_URL`; see [ARENA_DEPLOYMENT.md](ARENA_DEPLOYMENT.md) and the included Render blueprint. Public matching needs two real players online.

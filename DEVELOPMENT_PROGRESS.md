@@ -121,3 +121,7 @@ Added a direct Build action beside the primary combat controls, reduced circular
 ### Independent player combat and switchable weapons
 
 Fixed the primary Attack action requiring a healthy companion to cause damage. Players now use a visible sword or bow, with range, cooldowns, auto-facing, sword swings, bow pose and straight moving arrows. Mobile centre toggle, G and backpack equipment choices switch weapons. Healthy companions retain their basic command and elemental abilities. Monster damage now reaches the selected nearby actor, and player hits show a brief ground flash. Existing collection, farming rewards, shields, defeat recovery and finale completion are reused.
+
+### Versus Arena: public and private duels
+
+Added an isolated 1-vs-1 module with a public Quick Match queue and friend room codes, ready/countdown, normalized sword/bow combat, live opponent movement and health, a three-minute clock, results, rematches, disconnect pause/resume and forfeits. Movement, hits and match results are simulated by a standalone WebSocket server. Touch/keyboard controls and native team labels use the existing character/weapon art style. Adventure saves remain separate. Local two-client functionality is implemented; the live Netlify site requires deployment of the included server blueprint and a configured public WSS URL. No hosting account/server was provisioned.

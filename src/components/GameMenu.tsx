@@ -14,8 +14,11 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useGame, type Panel } from '@/game/store';
+import { useRouter } from 'next/navigation';
+import { Swords } from 'lucide-react';
 import { navigation } from '@/game/input';
 export default function GameMenu() {
+  const router = useRouter();
   const settings = useGame((s) => s.settings),
     build = useGame((s) => s.build);
   const links: { panel: Panel; label: string; icon: typeof Backpack; hint: string }[] = [
@@ -61,6 +64,19 @@ export default function GameMenu() {
             </span>
           </button>
         ))}
+        <button
+          aria-label="Versus Arena"
+          onClick={async () => {
+            await useGame.getState().persist();
+            if (useGame.getState().saveStatus === 'Saved locally') router.push('/arena');
+          }}
+        >
+          <Swords size={22} />
+          <span>
+            <b>Versus Arena</b>
+            <small>Challenge a friend · 1 vs 1</small>
+          </span>
+        </button>
       </nav>
       <div className="drawer-tools">
         <h3>World controls</h3>

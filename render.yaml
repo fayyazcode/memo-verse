@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: momoverse-arena
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run arena:build
+    startCommand: npm run arena:start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: ARENA_HOST
+        value: 0.0.0.0
+      - key: ARENA_ALLOWED_ORIGINS
+        value: https://momoversee.netlify.app

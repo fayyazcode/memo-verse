@@ -2,7 +2,7 @@
 
 ## Runtime
 
-Next.js App Router renders the application shell. A client-only dynamic import loads React Three Fiber and the Rapier scene, so WebGL and physics never run during server rendering. The application currently has no backend routes or authentication.
+Next.js App Router renders the application shell. A client-only dynamic import loads React Three Fiber and the Rapier scene, so WebGL and physics never run during server rendering. The adventure remains browser-local with no account authentication; the separate online versus backend is described below.
 
 - `src/components/World.tsx`: scene, instanced terrain/scenery, static colliders, player capsule, camera obstruction raycasts, resource visuals, companion, and building interaction.
 - `src/components/Character.tsx`: replaceable original procedural character and species models, locomotion and action poses.
@@ -19,7 +19,7 @@ Rapier steps at 60 Hz. Controller velocity and camera updates run in the render 
 
 Quest objectives consume typed-by-content event names (`talk`, `gather`, `craft`, `befriend`, `ability`, `discover`, `deliver`, `repair`, `defeat`, `shelter`). Counts clamp to the objective requirement. Reward claims validate readiness and current status. Transactions calculate a new inventory before committing, so missing ingredients or insufficient capacity cannot partially consume resources.
 
-This is client-authoritative guest simulation. These checks provide gameplay consistency, **not online anti-cheat guarantees**. A future server must own authenticated transactions, reconstruct valid progression, enforce costs/prerequisites, and reject replayed commands. Accepting arbitrary client snapshots is insufficient.
+The adventure is client-authoritative guest simulation. These checks provide gameplay consistency, **not online anti-cheat guarantees**. A future server must own authenticated transactions, reconstruct valid progression, enforce costs/prerequisites, and reject replayed commands. Accepting arbitrary client snapshots is insufficient.
 
 ## Persistence
 
@@ -100,3 +100,7 @@ Shelter checks flood connected roofed headroom at ground/raised floors, verify s
 `MonsterMeadow` renders the fenced entrance, guide sign, original monster models, attack rings, pouches and spawn markers. The map/menu/sign expose the guide explicitly. `Save.squad.hunting` is optional for legacy compatibility. Existing village practice targets, ten missions, housing and original combat controls remain available. This addition does not introduce settlement jobs or production systems.
 
 Player weapons live in `game/weapons.ts`: sword range/cooldown, aimed bow launch, finite straight-arrow flight and shared target/reward resolution. `squad.damage` accepts a player source as well as a companion, preserving the existing Guardian and monster rewards. The primary Attack action also retains a healthy active companion’s basic command; Q/E/R remain companion abilities. Arrows are transient store state, pause with menus, and clear on a new session or player defeat. Monster hits resolve against the actor chosen by their nearest-target simulation rather than redirecting to any nearby companion.
+
+## Online versus module
+
+`/arena` is an isolated client page reached through Menu → Versus Arena after saving the adventure checkpoint. It uses the existing Character and weapon models with explicit per-fighter animation state. It does not run the adventure simulation or submit its save data to the network. `src/arena/client.ts` connects to the configured WebSocket endpoint; `rules.ts` owns normalized duel simulation and safe public snapshots. `server/arena-server.ts` owns private rooms, a shared public waiting queue, guest session tokens, reconnect grace, message/origin limits and authoritative command processing. The separate server is packaged by `npm run arena:build`; it is not a serverless Next.js route. See ARENA_DEPLOYMENT.md for local and Netlify hosting requirements.

@@ -10,7 +10,10 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "format": "prettier --write src tests e2e *.ts *.json",
-    "profile:squad": "node scripts/profile-squad.cjs"
+    "profile:squad": "node scripts/profile-squad.cjs",
+    "arena": "tsx server/run.ts",
+    "arena:build": "esbuild server/run.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-arena/server.mjs",
+    "arena:start": "node dist-arena/server.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
@@ -21,6 +24,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "three": "^0.185.0",
+    "ws": "^8.22.1",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
@@ -29,8 +33,11 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/three": "^0.185.0",
+    "@types/ws": "^8.18.2",
+    "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.7",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   }

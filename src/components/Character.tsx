@@ -3,7 +3,7 @@ import { squadRuntime } from '@/game/squad-runtime';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import HeldItem from './HeldItem';
+import HeldItem, { ItemModel } from './HeldItem';
 import { WorkProp } from './VillagerTools';
 import { villagerPose } from '@/game/villagers';
 import { useGame } from '@/game/store';
@@ -37,6 +37,7 @@ export function Character({
   villagerId,
   accent = '#c7b99c',
   accessory = 'none',
+  arenaPose,
 }: {
   color?: string;
   hoodie?: string;
@@ -46,6 +47,7 @@ export function Character({
   villagerId?: string;
   accent?: string;
   accessory?: 'none' | 'cap' | 'scarf';
+  arenaPose?: { weapon: 'sword' | 'bow'; actionTime: number };
 }) {
   const root = useRef<THREE.Group>(null),
     left = useRef<THREE.Group>(null),
@@ -76,7 +78,18 @@ export function Character({
         dt
       );
     if (ears.current) ears.current.rotation.z = Math.sin(t * 2) * 0.025;
-    const action = !npc && Date.now() < playerRuntime.actionUntil ? playerRuntime.action : 'idle';
+    const action = arenaPose
+      ? arenaPose.actionTime > 0
+        ? arenaPose.weapon === 'bow'
+          ? 'shoot'
+          : 'attack'
+        : 'idle'
+      : !npc && Date.now() < playerRuntime.actionUntil
+        ? playerRuntime.action
+        : 'idle';
+    const actionStarted = arenaPose
+      ? Date.now() - (0.45 - arenaPose.actionTime) * 1000
+      : playerRuntime.actionStarted;
     const air = !npc && !playerRuntime.grounded;
     [leftArm, rightArm].forEach((arm, i) => {
       if (arm.current) {
@@ -88,19 +101,16 @@ export function Character({
           : action === 'shoot'
             ? -1.3 +
               (i === 1
-                ? Math.sin(
-                    Math.min(1, (Date.now() - playerRuntime.actionStarted) / 650) * Math.PI
-                  ) * 0.3
+                ? Math.sin(Math.min(1, (Date.now() - actionStarted) / 650) * Math.PI) * 0.3
                 : 0)
             : action === 'attack'
               ? -0.3 -
-                attackPose(Date.now(), playerRuntime.actionStarted) * 1.7 * (i === 1 ? 1 : 0.4)
+                attackPose(Date.now(), actionStarted, arenaPose ? 450 : 650) *
+                  1.7 *
+                  (i === 1 ? 1 : 0.4)
               : action === 'mine'
                 ? -0.3 -
-                  Math.sin(
-                    Math.min(1, (Date.now() - playerRuntime.actionStarted) / 1100) * Math.PI * 3
-                  ) *
-                    1.2
+                  Math.sin(Math.min(1, (Date.now() - actionStarted) / 1100) * Math.PI * 3) * 1.2
                 : action === 'pick'
                   ? -1.35
                   : action === 'gather'
@@ -198,6 +208,11 @@ export function Character({
           <Orb scale={[0.14, 0.3, 0.16]} color={hoodie} />
           <Orb position={[0, -0.24, 0.035]} scale={[0.13, 0.13, 0.13]} color={color} />
           {!npc && v === 1 && <HeldItem />}
+          {arenaPose && v === 1 && (
+            <group position={[0, -0.3, 0.13]}>
+              <ItemModel item={arenaPose.weapon} />
+            </group>
+          )}
           {villagerId && v === 1 && (
             <group ref={workTool}>
               <WorkProp id={villagerId} />
