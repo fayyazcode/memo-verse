@@ -31,7 +31,7 @@ test('outfits persist and a companion walks, rests and performs attacks', async 
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await expect(page.getByText('Resting nearby', { exact: true })).toBeVisible({ timeout: 20000 });
   await page.keyboard.down('KeyD');
   try {

@@ -540,3 +540,120 @@ iframe[title='Netlify Badge'] {
     overscroll-behavior: contain;
   }
 }
+/* Reference name plates: cream, moss-green type, portrait and a slim live health bar. */
+.world-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 2px solid #b8c98c;
+  border-radius: 22px;
+  background: #fffbed;
+  color: #294b3a;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  line-height: 17px;
+  box-shadow: 0 3px 6px #35452d38;
+  max-width: min(230px, calc(100vw - 20px));
+}
+
+.name-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #77b54f;
+}
+.name-tag-portrait {
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.name-tag-body {
+  min-width: 0;
+  flex: 1;
+  display: block;
+}
+.name-tag-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.name-tag-name {
+  font-size: inherit;
+  color: #294b3a;
+  font-weight: 700;
+}
+.name-tag-level {
+  font-size: 10px;
+  font-weight: 700;
+  color: #86a163;
+  white-space: nowrap;
+}
+.name-tag-health {
+  display: block;
+  height: 4px;
+  margin-top: 3px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #dce4bf;
+  min-width: 74px;
+}
+.name-tag-health i {
+  display: block;
+  height: 100%;
+  background: #78b74f;
+  border-radius: inherit;
+}
+.world-label[data-kind='companion']::after,
+.world-label[data-kind='enemy']::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #fffbed;
+  border-right: 2px solid #b8c98c;
+  border-bottom: 2px solid #b8c98c;
+  left: calc(50% - 5px);
+  bottom: -6px;
+  transform: rotate(45deg);
+}
+.world-label[data-kind='enemy'] .name-tag-health i {
+  background: #cf8861;
+}
+.map-meadow {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #915b35;
+  font-size: 18px;
+  cursor: pointer;
+}
+.map-meadow-hint {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 75%;
+  z-index: 3;
+  background: #fff9e7;
+  padding: 8px;
+  border-radius: 12px;
+  color: #294b3a;
+  font-size: 12px;
+}
+.meadow-guide p {
+  line-height: 1.6;
+}
+.meadow-guide article {
+  display: grid;
+  gap: 5px;
+  background: #f5efd9;
+  border: 1px solid #c6d3ad;
+  border-radius: 16px;
+  margin: 10px 0;
+  padding: 12px;
+}
+.meadow-guide article small {
+  color: #536e46;
+}

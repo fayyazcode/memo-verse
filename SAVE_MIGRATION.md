@@ -29,3 +29,9 @@ Browser settings use `hudStyleVersion: 2` to adopt a compact mission tracker onc
 `Save.blocks` retains existing item IDs. Optional `part: 'roof' | 'gate'` and `rotation: 0 | 1` metadata distinguish wooden roof panels and gates; absent metadata renders/validates the original cube. Gate opening uses `open:gate:x:y:z` in the existing flags list. Roof/gate pieces each cost and refund one wooden block. The validator checks metadata, plot/height limits and a gate's two-cell headroom; invalid data does not reset the save.
 
 Loading now projects recorded discoveries, owned companions, utility flags, repair/Guardian flags, the chest flag and a valid existing shelter into active mission progress. This returns a reconciled copy without replaying materials, currency, creature XP or mission rewards. Repeatable gather/craft counters retain their after-acceptance semantics. Save/DB versions, quest IDs and once-only claims remain unchanged.
+
+## Monster Meadow
+
+Optional `Save.squad.hunting` stores three monsters' HP, bounded positions, attack cooldowns/warnings, remaining respawn timers and uncollected loot flags. `squadOf` supplies defaults for old squads without mutating the input. Explicit malformed hunting state is rejected through the existing validation path. New target IDs are `hunt0`–`hunt2`; adventure and IndexedDB versions, inventory items and story IDs remain unchanged.
+
+Coins/XP are granted only on a living-to-defeated transition. Material pouches are collected by one inventory transaction; full bags leave them intact, and respawn waits for collection. Timers follow active simulation time, retaining existing menu/background pauses and checkpoint/revision behaviour. Reloading cannot replay a defeat or bypass a pending pouch. Guardian rewards and mission gather/defeat events remain separate.

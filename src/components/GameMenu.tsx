@@ -35,6 +35,12 @@ export default function GameMenu() {
       hint: 'Follow, stay and utilities',
     },
     { panel: 'map', label: 'World map', icon: Map, hint: 'Destinations and discoveries' },
+    {
+      panel: 'meadow',
+      label: 'Monster Meadow',
+      icon: Compass,
+      hint: 'Repeatable monster battles and loot',
+    },
     { panel: 'settings', label: 'Settings', icon: Settings, hint: 'UI scale, sound and controls' },
     { panel: 'pause', label: 'Pause & save', icon: Save, hint: 'Save or return to title' },
   ];

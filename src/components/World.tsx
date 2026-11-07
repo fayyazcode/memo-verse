@@ -1,6 +1,8 @@
 'use client';
-import { maxCreatureHp } from '@/game/rules';
-import { TRAINING, formation, retreatPosition, squadOf, memberOf } from '@/game/squad';
+import { maxCreatureHp, levelFromXp } from '@/game/rules';
+import { targets, TRAINING, formation, retreatPosition, squadOf, memberOf } from '@/game/squad';
+import MonsterMeadow from './MonsterMeadow';
+import { MONSTERS, inMeadow } from '@/game/hunting';
 import { squadRuntime } from '@/game/squad-runtime';
 import AbilityEffects from './AbilityEffects';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -507,7 +509,7 @@ function ObjectMesh({ id }: { id: string }) {
   );
   const trainingIndex = TRAINING.findIndex((t) => t.id === id);
   const depleted = used > time * 10;
-  if (obj.kind === 'landmark') return null;
+  if (obj.kind === 'landmark' || id.startsWith('hunt') || id === 'meadowBoard') return null;
   return (
     <group
       ref={shake}
@@ -532,7 +534,11 @@ function ObjectMesh({ id }: { id: string }) {
           />
           <Label
             interactionId={id}
-            text={`${obj.name} · ${Math.ceil(trainingHp ?? 240)} HP`}
+            kind="enemy"
+            text={obj.name}
+            level={1}
+            hp={Math.ceil(trainingHp ?? 240)}
+            maxHp={240}
             position={[0, 2, 0]}
             size={0.28}
           />
@@ -811,6 +817,14 @@ function Player() {
         destination.x = pos[0];
         destination.z = pos[2];
       }
+      if (destination.interaction?.startsWith('hunt')) {
+        const i = MONSTERS.findIndex((m) => m.id === destination.interaction);
+        if (i >= 0) {
+          const pos = squadOf(useGame.getState().save).hunting!.positions[i];
+          destination.x = pos[0];
+          destination.z = pos[2];
+        }
+      }
       const distance = Math.hypot(destination.x - p.x, destination.z - p.z);
       const arrival = destination.interaction
         ? destination.interaction === 'guardian'
@@ -954,7 +968,16 @@ function Player() {
           radius: 2.5,
         })),
         ...OBJECTS.filter((o) => o.kind !== 'landmark').map((o) =>
-          o.id === 'guardian' ? { ...o, pos: enemyPosition } : o
+          o.id === 'guardian'
+            ? { ...o, pos: enemyPosition }
+            : o.id.startsWith('hunt')
+              ? {
+                  ...o,
+                  pos: squadOf(state.save).hunting!.positions[
+                    MONSTERS.findIndex((m) => m.id === o.id)
+                  ],
+                }
+              : o
         ),
         ...state.save.blocks
           .filter((b) => b.item === 'lamp' || b.part === 'gate')
@@ -994,6 +1017,7 @@ function Player() {
     >
       <CapsuleCollider args={[0.48, 0.3]} position={[0, 0.02, 0]} />
       <group ref={visual} position={[0, -0.78, 0]}>
+        <Label kind="player" text="Little Wanderer" position={[0, 2.3, 0]} size={0.4} />
         <Character
           moving={moving}
           running={running}
@@ -1018,6 +1042,7 @@ function Companions() {
 function Companion({ id, index }: { id: Species; index: number }) {
   const command = useGame((s) => s.save.squad?.order ?? s.command),
     healthy = useGame((s) => !!s.save.creatures[id]?.hp);
+  const creature = useGame((s) => s.save.creatures[id]);
   const runtime = squadRuntime[id];
   const { world, rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null),
@@ -1071,15 +1096,25 @@ function Companion({ id, index }: { id: Species; index: number }) {
     const q = squadOf(s.save),
       cState = s.save.creatures[id]!;
     const critical = cState.hp <= maxCreatureHp(cState) * 0.2;
-    const enemy = q.target?.startsWith('training')
-      ? TRAINING.find((t) => t.id === q.target)?.pos
-      : s.save.flags.includes('repaired') && !s.save.flags.includes('guardianDefeated')
-        ? q.enemyPosition
-        : undefined;
+    const threat =
+      targets(s.save).find((t) => t.id === q.target) ??
+      targets(s.save).find(
+        (t) =>
+          (t.id === 'guardian' || t.id.startsWith('hunt')) &&
+          Math.hypot(t.position[0] - player[0], t.position[2] - player[2]) < 8
+      );
+    const enemy = threat?.position;
     let goal = formation(player, index);
+    if (threat?.id.startsWith('hunt') && !inMeadow(player))
+      goal = [
+        player[0] + (player[0] < 13 ? -1 : player[0] > 26 ? 1 : 0),
+        player[1] - 0.74,
+        player[2] + (player[2] < 19 ? -1 : player[2] > 34 ? 1 : 0),
+      ];
     if (command === 'retreat' || critical) goal = retreatPosition(player, index, enemy);
     const engage =
       enemy &&
+      (!threat?.id.startsWith('hunt') || inMeadow(player)) &&
       q.stance !== 'passive' &&
       command !== 'retreat' &&
       command !== 'stay' &&
@@ -1168,6 +1203,16 @@ function Companion({ id, index }: { id: Species; index: number }) {
       enabledRotations={[false, false, false]}
     >
       <CapsuleCollider args={[0.16, 0.24]} position={[0, 0.4, 0]} sensor />
+      <Label
+        kind="companion"
+        species={id}
+        text={CREATURES[id].name}
+        level={levelFromXp(creature!.xp).level}
+        hp={Math.ceil(creature!.hp)}
+        maxHp={maxCreatureHp(creature!)}
+        position={[0, 1.75, 0]}
+        size={0.4}
+      />
       <group ref={visual}>
         <CreatureModel species={id} companion />
       </group>
@@ -1396,6 +1441,9 @@ function clickWorld(e: ThreeEvent<PointerEvent>) {
       : ((NPCS.some((n) => n.id === id)
           ? npcPosition(id!, useGame.getState().save.playTime)
           : undefined) ??
+        (id!.startsWith('hunt')
+          ? squadOf(state.save).hunting!.positions[MONSTERS.findIndex((m) => m.id === id)]
+          : undefined) ??
         OBJECTS.find((o) => o.id === id)?.pos ??
         buildingTarget(id!, state.save.blocks) ??
         (id.startsWith('creature:') ? CREATURES[id.slice(9) as Species]?.pos : undefined))
@@ -1482,6 +1530,7 @@ function Scene() {
           >
             <Terrain />
             <Scenery />
+            <MonsterMeadow />
             <Workplaces />
             <Buildings />
             {OBJECTS.map((o) => (

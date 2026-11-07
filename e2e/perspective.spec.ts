@@ -12,7 +12,7 @@ test('mobile camera perspectives remain available in the side menu and persist',
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Begin your adventure' }).tap({ timeout: 30000 });
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.screenshot({ path: '/tmp/momo-classic-mobile.png' });
   await page.getByRole('button', { name: 'Open adventure menu' }).tap();
   const toggle = page.getByRole('button', { name: 'Switch camera perspective' });

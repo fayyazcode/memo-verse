@@ -11,7 +11,7 @@ test('mobile joystick, collapsible HUD, touch actions and landscape menus work',
   );
   await page.goto('/');
   await page.getByRole('button', { name: 'Begin your adventure' }).tap({ timeout: 30000 });
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Expand tasks', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Expand minimap', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Expand tasks', exact: true }).tap();

@@ -12,6 +12,8 @@ import {
   Swords,
 } from 'lucide-react';
 import { useGame } from '@/game/store';
+import { MONSTERS } from '@/game/hunting';
+import { squadOf } from '@/game/squad';
 import { NPCS, OBJECTS } from '@/game/data';
 import { villagerPose } from '@/game/villagers';
 import { navigation, motion } from '@/game/input';
@@ -23,6 +25,12 @@ export default function TouchControls() {
   const gateOpen = useGame(
     (s) => !!s.target?.startsWith('gate:') && s.save.flags.includes('open:' + s.target)
   );
+  const huntAction = useGame((s) => {
+    const i = MONSTERS.findIndex((m) => m.id === s.target);
+    if (i < 0) return null;
+    const h = squadOf(s.save).hunting!;
+    return h.hp[i] > 0 ? 'Fight' : h.loot[i] ? 'Collect' : 'Wait';
+  });
   const atHome = useGame(
     (s) =>
       !!s.target &&
@@ -229,7 +237,7 @@ export default function TouchControls() {
             <button
               className="touch-interact"
               data-available={!!target}
-              disabled={!!visitor && visitor === target}
+              disabled={(!!visitor && visitor === target) || huntAction === 'Wait'}
               aria-label={
                 target?.startsWith('gate:')
                   ? gateOpen
@@ -252,11 +260,13 @@ export default function TouchControls() {
                       ? gateOpen
                         ? 'Close'
                         : 'Open'
-                      : NPCS.some((n) => n.id === target)
-                        ? 'Talk'
-                        : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
-                          ? 'Gather'
-                          : 'Use'}
+                      : huntAction
+                        ? huntAction
+                        : NPCS.some((n) => n.id === target)
+                          ? 'Talk'
+                          : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
+                            ? 'Gather'
+                            : 'Use'}
               </small>
             </button>
             <button

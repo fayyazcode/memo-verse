@@ -6,11 +6,13 @@ import { playerRuntime } from '@/game/input';
 import { useGame } from '@/game/store';
 import { missionGuidance } from '@/game/guidance';
 import { trackedMission } from '@/game/ui';
-import type { Vec3 } from '@/game/data';
+import type { Vec3, Species } from '@/game/data';
 type Entry = {
   anchor: THREE.Group;
   element: HTMLDivElement;
   interactionId?: string;
+  kind: 'player' | 'companion' | 'object' | 'enemy';
+  species?: Species;
   dirty: boolean;
   width: number;
   height: number;
@@ -23,12 +25,22 @@ export function WorldLabel({
   color = '#fff7df',
   size = 0.43,
   interactionId,
+  kind = 'object',
+  species,
+  level,
+  hp,
+  maxHp,
 }: {
   text: string;
   position: Vec3;
   color?: string;
   size?: number;
   interactionId?: string;
+  kind?: Entry['kind'];
+  species?: Species;
+  level?: number;
+  hp?: number;
+  maxHp?: number;
 }) {
   const anchor = useRef<THREE.Group>(null),
     entry = useRef<Entry | null>(null);
@@ -39,6 +51,8 @@ export function WorldLabel({
     element.style.display = 'none';
     const value: Entry = {
       interactionId,
+      kind,
+      species,
       anchor: anchor.current,
       element,
       dirty: true,
@@ -53,14 +67,53 @@ export function WorldLabel({
       element.remove();
       entry.current = null;
     };
-  }, [interactionId]);
+  }, [interactionId, kind, species]);
   useEffect(() => {
     if (!entry.current) return;
-    entry.current.element.textContent = text;
-    entry.current.element.style.color = color;
-    entry.current.element.style.fontSize = `${Math.max(14, Math.min(18, Math.round((size / 0.4) * 14)))}px`;
+    const el = entry.current.element;
+    el.dataset.kind = kind;
+    el.replaceChildren();
+    if (kind === 'player') {
+      const dot = document.createElement('span');
+      dot.className = 'name-tag-dot';
+      el.append(dot);
+    }
+    if (species) {
+      const portrait = document.createElement('img');
+      portrait.src = `/portraits/${species}.svg`;
+      portrait.alt = '';
+      portrait.className = 'name-tag-portrait';
+      el.append(portrait);
+    }
+    const body = document.createElement('span');
+    body.className = 'name-tag-body';
+    const line = document.createElement('span');
+    line.className = 'name-tag-line';
+    const name = document.createElement('strong');
+    name.className = 'name-tag-name';
+    name.textContent = text;
+    line.append(name);
+    if (level !== undefined) {
+      const rank = document.createElement('small');
+      rank.className = 'name-tag-level';
+      rank.textContent = `Lv. ${level}`;
+      line.append(rank);
+    }
+    body.append(line);
+    if (hp !== undefined && maxHp !== undefined) {
+      const bar = document.createElement('span');
+      bar.className = 'name-tag-health';
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.max(0, Math.min(100, (hp / Math.max(1, maxHp)) * 100))}%`;
+      bar.append(fill);
+      bar.setAttribute('aria-label', `${hp}/${maxHp} HP`);
+      body.append(bar);
+    }
+    el.append(body);
+    el.style.color = '#294b3a';
+    el.style.fontSize = `${Math.max(14, Math.min(16, Math.round((size / 0.4) * 14)))}px`;
     entry.current.dirty = true;
-  }, [text, color, size]);
+  }, [text, color, size, kind, species, level, hp, maxHp]);
   return <group ref={anchor} position={position} />;
 }
 const point = new THREE.Vector3();
@@ -119,8 +172,12 @@ export function WorldLabelLayout() {
         state.panel ||
         state.dialogue ||
         document.hidden ||
-        !entry.interactionId ||
-        entry.interactionId !== state.target
+        (entry.kind === 'companion'
+          ? entry.species !== state.save.active
+          : entry.kind !== 'player' &&
+            (!entry.interactionId ||
+              (entry.interactionId !== state.target &&
+                !(entry.kind === 'enemy' && entry.interactionId === state.save.squad?.target))))
       ) {
         if (el.style.display !== 'none') el.style.display = 'none';
         continue;
@@ -133,7 +190,7 @@ export function WorldLabelLayout() {
       );
       point.project(camera);
       if (
-        distance > 4.5 ||
+        distance > (entry.kind === 'companion' || entry.kind === 'enemy' ? 9 : 4.5) ||
         point.z < -1 ||
         point.z > 1 ||
         Math.abs(point.x) > 1.1 ||
@@ -142,7 +199,7 @@ export function WorldLabelLayout() {
         el.style.display = 'none';
         continue;
       }
-      el.style.display = 'block';
+      el.style.display = 'flex';
       if (entry.dirty) {
         entry.width = el.offsetWidth;
         entry.height = el.offsetHeight;
@@ -155,16 +212,33 @@ export function WorldLabelLayout() {
         distance,
       });
     }
-    point
-      .set(playerRuntime.position[0], playerRuntime.position[1] + 0.2, playerRuntime.position[2])
-      .project(camera);
+    const bounds = { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity };
+    for (const dx of [-0.55, 0.55])
+      for (const dy of [-0.78, 1.12])
+        for (const dz of [-0.4, 0.4]) {
+          point
+            .set(
+              playerRuntime.position[0] + dx,
+              playerRuntime.position[1] + dy,
+              playerRuntime.position[2] + dz
+            )
+            .project(camera);
+          const px = ((point.x + 1) * size.width) / 2,
+            py = ((1 - point.y) * size.height) / 2;
+          bounds.left = Math.min(bounds.left, px);
+          bounds.right = Math.max(bounds.right, px);
+          bounds.top = Math.min(bounds.top, py);
+          bounds.bottom = Math.max(bounds.bottom, py);
+        }
     const player = {
-      x: ((point.x + 1) * size.width) / 2 - 34,
-      y: ((1 - point.y) * size.height) / 2 - 45,
-      width: 68,
-      height: 90,
+      x: bounds.left,
+      y: bounds.top,
+      width: bounds.right - bounds.left,
+      height: bounds.bottom - bounds.top,
     };
-    const placed: { x: number; y: number; width: number; height: number }[] = [player];
+    const placed: { x: number; y: number; width: number; height: number; tag?: boolean }[] = [
+      player,
+    ];
     if (candidates.length)
       for (const node of document.querySelectorAll(
         '#mission-direction, .game-top, .player-card, .tracked-mission, .companion-summary, .right-hud > button, .coin-pill, .touch-actions, .virtual-joystick, .hotbar, .interaction'
@@ -180,12 +254,16 @@ export function WorldLabelLayout() {
       }
     for (const c of candidates.sort((a, b) => a.distance - b.distance)) {
       const e = c.entry;
+      const obstacles =
+        e.kind === 'player' || e.kind === 'companion' ? placed.filter((r) => r !== player) : placed;
       let w = e.width,
         h = e.height,
         x = Math.round(Math.max(8, Math.min(size.width - w - 8, c.x - w / 2))),
         y = Math.round(c.y - h),
         fit = false;
       if (
+        e.kind !== 'player' &&
+        e.kind !== 'companion' &&
         x < player.x + player.width + 4 &&
         x + w + 4 > player.x &&
         y < player.y + player.height + 4 &&
@@ -208,20 +286,22 @@ export function WorldLabelLayout() {
         }
       }
       for (let attempt = 0; attempt < 8; attempt++) {
-        const overlap = placed.some(
+        const conflict = obstacles.find(
           (r) =>
             x < r.x + r.width + 4 && x + w + 4 > r.x && y < r.y + r.height + 4 && y + h + 4 > r.y
         );
-        if (!overlap) {
+        if (!conflict) {
           fit = true;
           break;
         }
-        y -= h + 4;
+        if (conflict.tag && conflict.y + conflict.height / 2 < c.y)
+          y = Math.round(conflict.y + conflict.height + 6);
+        else y = Math.round(conflict.y - h - 6);
       }
       if (!fit || y < 58) {
         x = Math.round(Math.max(8, Math.min(size.width - w - 8, c.x - w / 2)));
         y = Math.round(player.y + player.height + 10);
-        fit = !placed.some(
+        fit = !obstacles.some(
           (r) =>
             x < r.x + r.width + 4 && x + w + 4 > r.x && y < r.y + r.height + 4 && y + h + 4 > r.y
         );
@@ -231,7 +311,7 @@ export function WorldLabelLayout() {
         continue;
       }
       e.element.style.transform = `translate(${x}px,${y}px)`;
-      placed.push({ x, y, width: w, height: h });
+      placed.push({ x, y, width: w, height: h, tag: true });
     }
   });
   return null;

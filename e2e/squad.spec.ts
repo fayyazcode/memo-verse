@@ -26,7 +26,7 @@ async function seed(page: Page, s: Save) {
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
 }
 async function saved(page: Page): Promise<Save> {
   return page.evaluate(

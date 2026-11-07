@@ -1,3 +1,4 @@
+import { MONSTERS } from './hunting';
 export type Vec3 = [number, number, number];
 export type ItemId =
   | 'wood'
@@ -486,11 +487,14 @@ export const OBJECTS: WorldObject[] = [
     name: ['Practice sprout', 'Practice stone', 'Practice spark'][i],
     pos: [x, 0, 14] as Vec3,
   })),
+  { id: 'meadowBoard', kind: 'station', name: 'Monster Meadow guide', pos: [23, 0, 17.7] },
+  ...MONSTERS.map((m) => ({ id: m.id, kind: 'enemy' as const, name: m.name, pos: m.pos })),
   { id: 'guardian', kind: 'enemy', name: 'Bramble Guardian', pos: [92, 0, 20] },
 ];
 export const PLOT = { x: -6, z: 19, size: 16, height: 8 };
 export const LANDMARKS = [
   { id: 'square', name: 'Momo Village', pos: [0, 0, 0] as Vec3 },
   { id: 'plot', name: 'Your homestead', pos: [2, 0, 27] as Vec3 },
+  { id: 'meadow', name: 'Monster Meadow', pos: [20, 0, 25] as Vec3 },
   ...OBJECTS.filter((o) => o.kind === 'landmark'),
 ];

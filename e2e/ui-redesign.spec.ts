@@ -46,7 +46,7 @@ async function seed(page: Page) {
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
 }
 async function inside(el: Locator, w: number, h: number) {
   const b = await el.boundingBox();

@@ -39,3 +39,7 @@ Routine pickups, selections, crafting confirmations, regrowth, no-target and coo
 `PlatformBadgeGuard` handles known Netlify badge elements and injected branding links/frames, including small wrapper/shadow containers, so they do not cover the hotbar. The local browser suite injects branding deliberately to test this; it does not verify the live Netlify deployment.
 
 Resting residents now have an explicit Knock button at their doorway. E and the mobile context button use the same action. The villager stands up, walks through the door, and begins dialogue outside once the player is nearby. Repeat knocks are disabled during the approach. Conversation pauses the world clock; afterwards the resident waits briefly and returns indoors. Door visits are transient and do not add save fields or rewards.
+
+## Reference name plates
+
+The supplied reference now guides overhead tags: cream rounded plates, moss-green names, soft borders/shadows, a green player status dot and companion portrait/level/health. Only the active companion is labelled continuously. Other names remain contextual; a focused enemy can show its small health bar during combat. Plates reserve HUD space and use native browser text rather than scaled textures. Portraits are original local SVGs for the existing four species.

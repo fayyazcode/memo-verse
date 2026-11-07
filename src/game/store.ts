@@ -1,3 +1,4 @@
+import { MONSTERS } from './hunting';
 import { starterHome, canBuildHome, type BuildPart } from './building';
 import {
   npcPosition,
@@ -67,7 +68,8 @@ export type Panel =
   | 'pause'
   | 'commands'
   | 'squad'
-  | 'menu';
+  | 'menu'
+  | 'meadow';
 export type QuestState = { status: 'active' | 'complete'; progress: Record<string, number> };
 export type Save = {
   version: 1;
@@ -591,6 +593,33 @@ export const useGame = create<GameStore>((set, get) => ({
       void get().persist();
       return;
     }
+    if (target.startsWith('hunt')) {
+      const i = MONSTERS.findIndex((m) => m.id === target),
+        q = squadOf(s),
+        h = q.hunting!;
+      if (
+        i < 0 ||
+        Math.hypot(s.position[0] - h.positions[i][0], s.position[2] - h.positions[i][2]) > 3.5
+      )
+        return;
+      if (h.hp[i] > 0) {
+        set({ save: { ...s, squad: { ...q, target } } });
+        get().attack();
+        return;
+      }
+      if (!h.loot[i]) return;
+      const inventory = transact(s.inventory, {}, { [MONSTERS[i].loot]: MONSTERS[i].amount });
+      if (!inventory) {
+        get().notify('Your bag is full. Make room to collect monster loot.');
+        return;
+      }
+      const squad = structuredClone(q);
+      squad.hunting!.loot[i] = false;
+      set({ save: { ...s, inventory, squad } });
+      sound('gather', get().settings.effects);
+      void get().persist();
+      return;
+    }
     const npc = NPCS.find((n) => n.id === target);
     if (npc) {
       if (get().visitor === npc.id) return;
@@ -644,6 +673,10 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     if (obj.id === 'craft') {
       get().open('craft');
+      return;
+    }
+    if (obj.id === 'meadowBoard') {
+      get().open('meadow');
       return;
     }
     if (obj.id === 'board') {
@@ -869,7 +902,10 @@ export const useGame = create<GameStore>((set, get) => ({
       q = squadOf(s);
     const target =
       order === 'focus'
-        ? (q.target ?? (get().target?.startsWith('training') ? get().target : 'guardian'))
+        ? (q.target ??
+          (get().target?.startsWith('training') || get().target?.startsWith('hunt')
+            ? get().target
+            : 'guardian'))
         : q.target;
     set({
       save: { ...s, squad: { ...q, order, target } },
@@ -902,7 +938,9 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     const selected =
       target ??
-      (state.target === 'guardian' || state.target?.startsWith('training')
+      (state.target === 'guardian' ||
+      state.target?.startsWith('training') ||
+      state.target?.startsWith('hunt')
         ? state.target
         : undefined);
     const result = cast(state.save, state.save.active, slot, selected, combatPositions());
@@ -1173,6 +1211,7 @@ export const useGame = create<GameStore>((set, get) => ({
       s.enemyHp !== state.save.enemyHp ||
       s.hp !== state.save.hp ||
       q.training.some((v, i) => v !== squadOf(state.save).training[i]) ||
+      q.hunting!.hp.some((v, i) => v !== squadOf(state.save).hunting!.hp[i]) ||
       q.equipped.some((id) => s.creatures[id]!.hp !== state.save.creatures[id]!.hp)
     )
       void get().persist();

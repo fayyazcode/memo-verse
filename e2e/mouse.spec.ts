@@ -28,7 +28,7 @@ test('mouse movement, NPC conversation and resource collection work alongside WA
     );
     await page.reload();
     await page.getByRole('button', { name: 'Continue your adventure' }).click();
-    await expect(page.getByText('Little Wanderer')).toBeVisible();
+    await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
     await page.waitForTimeout(2500);
   };
   await launch([-7, 0.8, -3]);

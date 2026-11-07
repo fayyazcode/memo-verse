@@ -26,7 +26,7 @@ async function seed(page: Page, save: Save) {
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
 }
 test('villagers visibly work and move on the map, while menus pause their routine', async ({
   page,

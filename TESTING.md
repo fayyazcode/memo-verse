@@ -131,3 +131,11 @@ After reviewing screenshots, corrected the indoor camera close-up by applying a 
 Screenshots reviewed include `/tmp/momo-house-preview.png`, `/tmp/momo-house-built.png` and `/tmp/momo-house-gate-open.png`. These validate the visible outline, house, open gate and normal camera framing. They remain software-WebGL checks, not physical-device performance measurements.
 
 After the final name/mission-arrow clearance adjustment, the production build passed again and **3/3 browser checks passed** against the updated port-3000 preview (housing plus both quiet-HUD scenarios). The reviewed indoor screenshot shows a normal-sized player, roof/wall cutaway, open gate and unobstructed nearby name. The logic suite remains **137/137 passing**.
+
+## Reference name plates and Monster Meadow
+
+Final logic suite: **144/144 tests in 14 files pass**. TypeScript and the production build pass. Seven new hunting tests cover legacy squad normalization, independent combat rewards, one-time loot collection, full-bag/distance safeguards, warning/dodge/leash behavior, paused timers, save validation, respawn and area attacks without duplicate payouts. The complete ten-mission campaign remains passing.
+
+The initial focused Chromium run passed **8/8 scenarios** across compact HUD, Monster Meadow, quiet HUD and creature squad abilities. After the final name-plate placement and duplicate sign-label fixes, the rebuilt application passed **5/5 scenarios** across Monster Meadow and quiet HUD. These include both cameras, portrait/level/live-health labels, a real touch attack and defeat, pouch collection, save/reload, active-time respawn, one nearby guide-sign label, explicit map/guide navigation and unobstructed mobile controls. The combat browser fixture resumes a valid wounded-monster checkpoint; subsequent attacks, rewards, collection, persistence and respawn use real application interactions.
+
+Reviewed screenshots: `/tmp/momo-reference-nameplates-isometric.png`, `/tmp/momo-reference-nameplates-classic.png` and `/tmp/momo-monster-meadow.png`. Labels use native DOM text with cream plates and minimal overlap adjustment. These checks use Chromium/software WebGL; they do not establish physical-phone frame rates or verify a live Netlify deployment.

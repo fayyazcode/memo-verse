@@ -29,7 +29,7 @@ async function enter(page: Page, save: Save) {
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).tap();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
 }
 test('quiet mobile play has one mission arrow, uncluttered names and an unobstructed inventory', async ({
   page,
@@ -57,7 +57,7 @@ test('quiet mobile play has one mission arrow, uncluttered names and an unobstru
   ];
   await enter(page, s);
   await expect(page.locator('#mission-direction')).toBeVisible({ timeout: 30000 });
-  await expect(page.locator('.world-label:visible')).toHaveCount(0);
+  await expect(page.locator('.world-label[data-kind="object"]:visible')).toHaveCount(0);
   await expect(page.locator('.toast')).toHaveCount(0);
   await expect(page.locator('.tracked-mission')).toHaveAttribute('data-minimized', 'true');
   await page.evaluate(() => {
@@ -124,7 +124,7 @@ test('nearby objects show a single clear name without routine pickup popups', as
   s.position = [25, 1, 15];
   s.quests.q01 = { status: 'complete', progress: {} };
   await enter(page, s);
-  const label = page.locator('.world-label:visible');
+  const label = page.locator('.world-label[data-kind="object"]:visible');
   await expect(label).toHaveCount(1, { timeout: 30000 });
   await expect(label).toContainText('Willow tree');
   expect(

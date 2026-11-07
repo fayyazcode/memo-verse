@@ -88,3 +88,11 @@ Use **Menu** for backpack, journal, collection, squad, commands, camera selectio
 Accept **Home Sweet Home** from Bruno before crafting its required blocks. At Bruno’s bench, craft 24 wooden blocks from 12 wood for the starter design. Go to your homestead, open **Menu → Build at your homestead**, choose **Starter home**, review the outline and cost, then build. It includes walls, a roof and an openable gate.
 
 For your own design, select **Wall**, **Roof** or **Gate**. Roof height defaults to 2; stack walls two blocks high first. Gate floor defaults to ground level and can be changed for raised floors. Gates open with E, a click, or the mobile Open button. A clear open doorway also counts, so older homes do not need a gate retrofit. Larger roofed rooms and raised floors are supported. Return to Bruno when the tracker shows a reward. See [the ten-mission audit](MISSION_AUDIT.md) for flow checks and recovery behaviour.
+
+## Monster Meadow
+
+Find the fenced meadow **east of your homestead**, or choose **Menu → Monster Meadow** for its guide. The sword marker on the full map opens the same guide. Enter through the north gap with a healthy companion, use Attack/abilities, and move away from amber attack rings.
+
+Defeated monsters give coins and companion XP. Use Interact/Collect on the loot pouch for materials. Monsters respawn after 20–30 active-play seconds once their pouch is collected; menus and time away pause the timer. Clear bag space if a pouch is waiting. Village healing remains free. These battles preserve the Guardian encounter and do not replace mission gathering objectives.
+
+Player and active-companion name plates use the cream reference style. Companion plates show an original portrait, level and actual health. Other names stay limited to nearby interaction targets or the focused enemy.

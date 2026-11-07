@@ -32,7 +32,7 @@ test('mission hover, map destinations and creature detail cards help the player'
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.getByRole('button', { name: 'Expand tasks' }).click();
   await page.locator('.quest-card').hover();
   await expect(page.getByRole('tooltip')).toBeVisible();

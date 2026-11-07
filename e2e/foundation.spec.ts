@@ -29,7 +29,7 @@ test('a guest can enter the world, move, pause, save and resume', async ({ page 
   });
   await page.screenshot({ path: '/tmp/momo-title.png' });
   await page.getByRole('button', { name: 'Begin your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await expect(page.getByText('Saved locally')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('canvas')).toBeVisible();
   await page.waitForTimeout(3000);
@@ -65,7 +65,7 @@ test('a guest can enter the world, move, pause, save and resume', async ({ page 
   expect(checkpoint.position[1]).toBeGreaterThan(0.5);
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.getByRole('button', { name: 'Pause game' }).click();
   await page.getByRole('button', { name: 'Save and quit' }).click();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();
@@ -107,7 +107,7 @@ test('NPC interaction accepts a real mission and journal survives reload', async
   expect((await saved(page)).quests).toHaveProperty('q01');
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.getByRole('button', { name: 'Open tracked mission', exact: true }).click();
   await expect(page.locator('.journal-quest').first()).toContainText('ACTIVE');
 });
@@ -173,7 +173,7 @@ test('a player can place a real block on the housing plot and reload it', async 
   }, s);
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.waitForTimeout(3000);
   await page.keyboard.press('Digit4');
   await page.keyboard.press('KeyB');
@@ -196,7 +196,7 @@ test('a player can place a real block on the housing plot and reload it', async 
   expect(blocks).toHaveLength(1);
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.getByRole('button', { name: 'Pause game' }).click();
   await page.getByRole('button', { name: 'Save and quit' }).click();
   await expect(page.getByRole('button', { name: 'Continue your adventure' })).toBeVisible();

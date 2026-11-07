@@ -1,4 +1,5 @@
 'use client';
+import { MONSTERS, MEADOW } from '@/game/hunting';
 import { npcPosition, villagerPose } from '@/game/villagers';
 import GameMenu from './GameMenu';
 import Notifications from './Notifications';
@@ -81,6 +82,7 @@ const panelNames: Record<NonNullable<Panel>, string> = {
   journal: 'Adventure journal',
   creatures: 'Forest friends',
   squad: 'Creature squad',
+  meadow: 'Monster Meadow',
   menu: 'Adventure menu',
   craft: 'The workshop',
   shop: 'Foxy’s little shop',
@@ -180,6 +182,25 @@ function MiniMap({ large = false }: { large?: boolean }) {
               ◆
             </span>
           ))}
+        <span
+          role={large ? 'button' : undefined}
+          tabIndex={large ? 0 : undefined}
+          className="map-meadow"
+          style={plot(MEADOW.entrance[0], MEADOW.entrance[2])}
+          aria-label="Monster Meadow training area"
+          onClick={(e) => {
+            e.stopPropagation();
+            useGame.getState().open('meadow');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              useGame.getState().open('meadow');
+            }
+          }}
+        >
+          ⚔
+        </span>
         <span className="map-home" style={plot(2, 27)}>
           <Home size={large ? 18 : 10} />
         </span>
@@ -391,6 +412,17 @@ function Hud() {
   const targetName =
     (target === 'plant' && s.flags.includes('ability:plant') ? 'Moonflower · watered' : null) ??
     NPCS.find((n) => n.id === target)?.name ??
+    (target?.startsWith('hunt')
+      ? (() => {
+          const i = MONSTERS.findIndex((m) => m.id === target),
+            h = squadOf(s).hunting!;
+          return h.hp[i] === 0
+            ? h.loot[i]
+              ? 'Monster loot pouch'
+              : 'Monster returning soon'
+            : MONSTERS[i].name;
+        })()
+      : null) ??
     OBJECTS.find((o) => o.id === target)?.name ??
     (target?.startsWith('gate:')
       ? 'Wooden gate'
@@ -1589,6 +1621,48 @@ function Commands() {
     </>
   );
 }
+function MeadowGuide() {
+  const save = useGame((s) => s.save),
+    h = squadOf(save).hunting!;
+  return (
+    <div className="meadow-guide">
+      <p className="panel-intro">
+        East of your homestead, through the gap in the wooden fence. Bring a healthy companion and
+        use Attack or an ability. Outside the fence, monsters cannot hurt the wanderer. Use Retreat
+        or Recall if companions need a break.
+      </p>
+      <p>
+        Watch the amber ring: move away before a monster strikes. Collect its loot pouch with
+        Interact. Respawn takes 20–30 active-play seconds from defeat. Collect the pouch to allow
+        the monster to return; menus pause the timer.
+      </p>
+      {MONSTERS.map((m, i) => (
+        <article key={m.id}>
+          <b>
+            {m.name} · Lv. {m.level}
+          </b>
+          <span>
+            {h.hp[i] > 0
+              ? `${h.hp[i]}/${m.hp} HP`
+              : h.loot[i]
+                ? 'Loot waiting'
+                : `Returns in ${Math.ceil(h.respawn[i])}s`}
+          </span>
+          <small>
+            {m.coins} coins · {m.xp} companion XP · {m.amount} {ITEMS[m.loot].name}
+          </small>
+        </article>
+      ))}
+      <button className="primary" onClick={() => useGame.getState().open('map')}>
+        View world map
+      </button>
+      <p>
+        Need a companion? Meet Luna after finishing The Forest Supplies. Heal companions free at the
+        village station. Farm rewards do not advance collection quests or grant Guardian rewards.
+      </p>
+    </div>
+  );
+}
 function PanelView() {
   const dialogRef = useRef<HTMLElement>(null);
   const panel = useGame((s) => s.panel),
@@ -1644,7 +1718,9 @@ function PanelView() {
           </IconButton>
         </header>
         <div className="panel-body">
-          {panel === 'menu' ? (
+          {panel === 'meadow' ? (
+            <MeadowGuide />
+          ) : panel === 'menu' ? (
             <GameMenu />
           ) : panel === 'squad' ? (
             <SquadPanel />

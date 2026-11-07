@@ -29,7 +29,7 @@ async function launch(page: Page, position: [number, number, number], fruit = fa
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
 }
 async function checkpoint(page: Page) {
   await page.getByRole('button', { name: 'Pause game', exact: true }).click();

@@ -31,7 +31,7 @@ test('selecting tools and food equips them and harvesting still awards once', as
   );
   await page.reload();
   await page.getByRole('button', { name: 'Continue your adventure' }).click();
-  await expect(page.getByText('Little Wanderer')).toBeVisible();
+  await expect(page.locator('.player-card').getByText('Little Wanderer')).toBeVisible();
   await page.keyboard.press('Digit5');
   await expect(page.getByText('Holding: Basic pickaxe')).toBeVisible();
   await page.screenshot({ path: '/tmp/momo-pickaxe.png' });

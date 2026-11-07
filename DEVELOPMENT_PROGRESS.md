@@ -107,3 +107,9 @@ Added an explicit Knock action shared by desktop/mobile interaction and the door
 Added Wall/Roof/Gate tools with roof height, gate floor/orientation and a 24-block starter-home outline/commit flow. Gate opening has real animated collision and saved state; roof/wall cutaways preserve the normal camera distance inside. Shelter checks now recognise larger rooms and raised floors while retaining old cube houses and rejecting incomplete enclosures. Starter placement validates and charges atomically; removal refunds the saved item and clears obsolete interaction flags.
 
 Audited all ten missions and expanded permanent-objective recovery, delivery/reward safeguards, stable journal numbering and live shelter checklists. Repeatable gather/craft objectives keep their original timing and now explain it in guidance. MISSION_AUDIT.md records each flow, changes and compatibility limits. Existing item IDs, version-1 saves and quest rewards are retained.
+
+## Reference name plates and repeatable monster meadow
+
+Replaced dark world tags with cream, moss-bordered reference plates. The player has a compact name/status dot; the active companion has a portrait, level, live HP bar and pointer. Added projected-body and tag-spacing rules to keep names near their models in Classic and Isometric. Distant NPC/object labels remain hidden.
+
+Added Monster Meadow east of the homestead: a fenced entrance, readable guide sign/map marker/menu guide, three original roaming monster variants, visible attack warnings, combat rewards, collectible material pouches and active-time respawns. Reused squad abilities/roles, shields, healing, actual-ground movement and persistence. Loot collection is atomic and once-only, full bags retain their pouch, and village/story encounters are preserved.

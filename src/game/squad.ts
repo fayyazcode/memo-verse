@@ -1,3 +1,11 @@
+import {
+  MONSTERS,
+  inMeadow,
+  newHunting,
+  advanceHunting,
+  validHunting,
+  type Hunting,
+} from './hunting';
 import { CREATURES, type Species, type Vec3 } from './data';
 import { elementalDamage, levelFromXp, maxCreatureHp } from './rules';
 import type { Save } from './store';
@@ -298,6 +306,7 @@ export type Squad = {
   tauntTime: number;
   playerShield: number;
   playerShieldTime: number;
+  hunting?: Hunting;
   training: number[];
   trainingRespawn: number[];
 };
@@ -323,11 +332,12 @@ export const newSquad = (active: Species | null): Squad => ({
   tauntTime: 0,
   playerShield: 0,
   playerShieldTime: 0,
+  hunting: newHunting(),
   training: [240, 240, 240],
   trainingRespawn: [0, 0, 0],
 });
 export function squadOf(s: Save): Squad {
-  if (s.squad) return s.squad;
+  if (s.squad) return s.squad.hunting ? s.squad : { ...s.squad, hunting: newHunting() };
   const q = newSquad(s.active);
   if (s.active)
     q.members[s.active] = {
@@ -363,6 +373,18 @@ export function targets(s: Save) {
     ...(s.flags.includes('repaired') && !s.flags.includes('guardianDefeated') && s.enemyHp > 0
       ? [{ id: 'guardian', position: q.enemyPosition, hp: s.enemyHp, element: 'Earth' }]
       : []),
+    ...MONSTERS.flatMap((m, i) =>
+      q.hunting!.hp[i] > 0
+        ? [
+            {
+              id: m.id,
+              position: q.hunting!.positions[i],
+              hp: q.hunting!.hp[i],
+              element: m.element,
+            },
+          ]
+        : []
+    ),
     ...TRAINING.flatMap((t, i) =>
       q.training[i] > 0
         ? [{ id: t.id, position: t.pos, hp: q.training[i], element: 'Neutral' }]
@@ -444,11 +466,15 @@ export function validSquad(s: Save, q: Squad) {
     !number(q.stun, 2) ||
     !number(q.tauntTime, 6) ||
     (q.taunt !== null && !q.equipped.includes(q.taunt)) ||
-    (q.target !== null && !['guardian', ...TRAINING.map((t) => t.id)].includes(q.target)) ||
+    (q.target !== null &&
+      !['guardian', ...TRAINING.map((t) => t.id), ...MONSTERS.map((m) => m.id)].includes(
+        q.target
+      )) ||
     !number(q.playerShield, 100) ||
     !number(q.playerShieldTime, 6)
   )
     return false;
+  if (q.hunting !== undefined && !validHunting(q.hunting)) return false;
   if (
     [q.training, q.trainingRespawn].some(
       (a) => !Array.isArray(a) || a.length !== 3 || a.some((n) => !number(n, 240))
@@ -535,6 +561,23 @@ function damage(
         if (participant !== id && s.creatures[participant]!.hp > 0)
           s.creatures[participant]!.xp += 60;
     }
+  } else if (target.id.startsWith('hunt')) {
+    const i = MONSTERS.findIndex((m) => m.id === target.id),
+      monster = MONSTERS[i],
+      h = q.hunting!;
+    h.hp[i] = hp;
+    if (hp === 0) {
+      h.respawn[i] = monster.respawn;
+      h.loot[i] = true;
+      h.windup[i] = 0;
+      s.coins += monster.coins;
+      const before = levelFromXp(s.xp).level;
+      s.xp += Math.ceil(monster.xp / 4);
+      s.hp += (levelFromXp(s.xp).level - before) * 5;
+      for (const ally of q.equipped)
+        if (s.creatures[ally]!.hp > 0)
+          s.creatures[ally]!.xp += ally === id ? monster.xp : Math.ceil(monster.xp / 2);
+    }
   } else {
     const i = TRAINING.findIndex((t) => t.id === target.id);
     q.training[i] = hp;
@@ -582,6 +625,7 @@ export function cast(
   let next = clone(s),
     q = next.squad!,
     member = (q.members[id] ??= newMember());
+  if (target?.id.startsWith('hunt') && id === next.active) q.target = target.id;
   let end = target?.position ?? origin;
   if (a.target === 'ally') {
     const allies = [
@@ -733,6 +777,30 @@ export function advanceSquad(s: Save, dt: number, positions: Positions = {}): Re
     if (v > 0 && t === 0) q.training[i] = 240;
     return t;
   });
+  for (const hit of advanceHunting(
+    q.hunting!,
+    dt,
+    next.playTime,
+    next.position,
+    q.equipped
+      .filter((id) => next.creatures[id]!.hp > 0)
+      .map((id) => positionOf(next, id, positions))
+  )) {
+    const monster = q.hunting!.positions[hit.index];
+    const near = q.equipped.filter(
+      (id) =>
+        next.creatures[id]!.hp > 0 &&
+        inMeadow(positionOf(next, id, positions)) &&
+        distance(positionOf(next, id, positions), monster) < 2.4
+    );
+    const victim =
+      near.find((id) => id === 'mosshell') ??
+      near.find((id) => id === next.active) ??
+      near[0] ??
+      null;
+    if (!victim && (!inMeadow(next.position) || distance(next.position, monster) >= 2.4)) continue;
+    absorb(next, victim, hit.damage);
+  }
   for (const zone of q.zones) {
     zone.remaining = Math.max(0, zone.remaining - dt);
     zone.pulse -= dt;
@@ -758,13 +826,18 @@ export function advanceSquad(s: Save, dt: number, positions: Positions = {}): Re
     const critical = next.creatures[id]!.hp <= maxCreatureHp(next.creatures[id]!) * 0.2;
     const hostile = targets(next).find(
       (t) =>
-        t.id === 'guardian' &&
+        (t.id === 'guardian' || (t.id.startsWith('hunt') && inMeadow(next.position))) &&
         distance(next.position, t.position) <=
           (q.stance === 'aggressive' || q.order === 'focus' ? 12 : 8)
     );
     const focus =
       q.order === 'focus'
-        ? targets(next).find((t) => t.id === q.target && distance(next.position, t.position) <= 12)
+        ? targets(next).find(
+            (t) =>
+              t.id === q.target &&
+              (!t.id.startsWith('hunt') || inMeadow(next.position)) &&
+              distance(next.position, t.position) <= 12
+          )
         : undefined;
     const target = focus ?? hostile;
     if (id === 'aquabub' && levelFromXp(next.creatures[id]!.xp).level >= 5) {
