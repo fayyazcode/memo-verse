@@ -2,9 +2,16 @@
 import { useMemo } from 'react';
 import { Home, RotateCw, Square, Triangle, DoorOpen } from 'lucide-react';
 import { useGame } from '@/game/store';
+import { motion } from '@/game/input';
 import { count } from '@/game/rules';
 import { HOME_COST, homeSite, type BuildPart } from '@/game/building';
-export default function BuildingTools() {
+export default function BuildingTools({
+  compact = false,
+  onChoose,
+}: {
+  compact?: boolean;
+  onChoose?: () => void;
+}) {
   const { save, buildPart, buildRotation, roofHeight, gateFloor } = useGame();
   const site = useMemo(
     () => homeSite(save.blocks, save.position, buildRotation),
@@ -12,11 +19,15 @@ export default function BuildingTools() {
   );
   const blocks = count(save.inventory, 'block');
   const choose = (part: BuildPart) => {
+    onChoose?.();
     const index = save.hotbar.indexOf('block');
     useGame.setState({ buildPart: part, ...(index >= 0 ? { selected: index } : {}) });
   };
   return (
-    <section className="building-tools" aria-label="House building tools">
+    <section
+      className={`building-tools ${compact ? 'building-tools-touch' : 'building-tools-desktop'}`}
+      aria-label="House building tools"
+    >
       <div className="building-part-options">
         {(
           [
@@ -38,7 +49,18 @@ export default function BuildingTools() {
         ))}
       </div>
       <div className="building-materials">
-        <span>{blocks} wooden blocks</span>
+        <span>{blocks} blocks</span>
+        {compact && (
+          <button
+            aria-label="Rotate building view"
+            title="Turn view"
+            onClick={() => {
+              motion.yaw += Math.PI / 2;
+            }}
+          >
+            <RotateCw size={16} />
+          </button>
+        )}
         {(buildPart === 'gate' || buildPart === 'home') && (
           <button
             aria-label="Rotate building piece"

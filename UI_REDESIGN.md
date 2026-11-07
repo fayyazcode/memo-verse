@@ -34,7 +34,7 @@ The default quest tracker is a compact chip, with details available on demand. M
 
 World names appear only for the current nearby interaction target. NPC work/rest text, distant practice-target HP labels and generic scenery names do not fill the world view. Native browser text stays sharp, and placement reserves the player and visible HUD areas. One direction arrow and distance point toward the tracked mission; it hides at the destination and while menus/dialogue are open.
 
-Routine pickups, selections, crafting confirmations, regrowth, no-target and cooldown notices are quiet. Inventory/material counts and contextual states provide feedback. Blocked actions, save failures, major rewards and new companions still show a short, deduplicated notice. Mobile controls use four rounded, cream-edged petals with distinct attack/ability/gather/jump colours, a central sprout, and a soft joystick. Player/companion cards and the hotbar use the supplied cream-and-forest reference palette.
+Routine pickups, selections, crafting confirmations, regrowth, no-target and cooldown notices are quiet. Inventory/material counts and contextual states provide feedback. Blocked actions, save failures, major rewards and new companions still show a short, deduplicated notice. Mobile controls use compact, cream-edged circles around a radial cluster with distinct Build/Attack/Ability/Gather/Jump colours and a soft joystick. Player/companion cards and the hotbar use the supplied cream-and-forest reference palette.
 
 `PlatformBadgeGuard` handles known Netlify badge elements and injected branding links/frames, including small wrapper/shadow containers, so they do not cover the hotbar. The local browser suite injects branding deliberately to test this; it does not verify the live Netlify deployment.
 
@@ -43,3 +43,7 @@ Resting residents now have an explicit Knock button at their doorway. E and the 
 ## Reference name plates
 
 The supplied reference now guides overhead tags: cream rounded plates, moss-green names, soft borders/shadows, a green player status dot and companion portrait/level/health. Only the active companion is labelled continuously. Other names remain contextual; a focused enemy can show its small health bar during combat. Plates reserve HUD space and use native browser text rather than scaled textures. Portraits are original local SVGs for the existing four species.
+
+### Compact circular action dock
+
+Mobile play groups Build, Attack, Ability, Gather and Jump around a small circular cluster. Build respects Bruno’s existing unlock. Entering construction replaces combat actions with round Place, Remove and Exit buttons, with Wall, Roof, Gate and Starter home directly above them. The same dock retains material counts, roof height, gate floor, piece rotation and camera rotation. Selecting a piece returns to Place; leaving or re-entering construction clears held touch input and removal mode. Desktop building tools and keyboard controls remain available.

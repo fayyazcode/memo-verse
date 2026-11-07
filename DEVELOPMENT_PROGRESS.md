@@ -113,3 +113,7 @@ Audited all ten missions and expanded permanent-objective recovery, delivery/rew
 Replaced dark world tags with cream, moss-bordered reference plates. The player has a compact name/status dot; the active companion has a portrait, level, live HP bar and pointer. Added projected-body and tag-spacing rules to keep names near their models in Classic and Isometric. Distant NPC/object labels remain hidden.
 
 Added Monster Meadow east of the homestead: a fenced entrance, readable guide sign/map marker/menu guide, three original roaming monster variants, visible attack warnings, combat rewards, collectible material pouches and active-time respawns. Reused squad abilities/roles, shields, healing, actual-ground movement and persistence. Loot collection is atomic and once-only, full bags retain their pouch, and village/story encounters are preserved.
+
+### Mobile construction action dock
+
+Added a direct Build action beside the primary combat controls, reduced circular buttons, and a construction-only dock at the same lower-right location. Reuses the existing building logic and starter-home preview without changing save data, building unlocks, material costs or mission requirements.

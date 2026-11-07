@@ -1,16 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import {
-  ArrowUp,
-  Footprints,
-  Hand,
-  Hammer,
-  Map,
-  PawPrint,
-  Sprout,
-  Sparkles,
-  Swords,
-} from 'lucide-react';
+import { ArrowUp, Footprints, Hand, Hammer, LogOut, Sparkles, Swords } from 'lucide-react';
+import BuildingTools from './BuildingTools';
 import { useGame } from '@/game/store';
 import { MONSTERS } from '@/game/hunting';
 import { squadOf } from '@/game/squad';
@@ -53,7 +44,7 @@ export default function TouchControls() {
   };
   useEffect(() => {
     clear();
-  }, [busy]);
+  }, [busy, build]);
   useEffect(() => {
     const clearInput = () => clear();
     const down = (e: globalThis.PointerEvent) => {
@@ -159,132 +150,148 @@ export default function TouchControls() {
           Run
         </button>
       </div>
-      <div className="touch-actions" hidden={trayOpen}>
-        {!build && (
-          <span className="action-sprout" aria-hidden="true">
-            <Sprout size={22} />
-          </span>
+      <div className="touch-action-dock" hidden={trayOpen} data-building={build}>
+        {build && (
+          <BuildingTools
+            compact
+            onChoose={() => {
+              touchInput.remove = false;
+              setRemoving(false);
+            }}
+          />
         )}
-        {build ? (
-          <>
-            <button
-              aria-label="Place blocks"
-              aria-pressed={!removing}
-              onClick={() => {
-                touchInput.remove = false;
-                setRemoving(false);
-              }}
-            >
-              <Hammer size={22} />
-              <small>Place</small>
-            </button>
-            <button
-              aria-label="Remove blocks"
-              aria-pressed={removing}
-              onClick={() => {
-                touchInput.remove = true;
-                setRemoving(true);
-              }}
-            >
-              <Hand size={22} />
-              <small>Remove</small>
-            </button>
-            <button
-              aria-label="Rotate building view"
-              onClick={() => {
-                motion.yaw += Math.PI / 2;
-              }}
-            >
-              <Map size={22} />
-              <small>Turn view</small>
-            </button>
-            <button
-              aria-label="Exit building mode"
-              onClick={() => {
-                useGame.setState({ build: false });
-                touchInput.remove = false;
-                setRemoving(false);
-              }}
-            >
-              <ArrowUp size={22} />
-              <small>Exit build</small>
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              className="touch-attack"
-              aria-label="Basic attack"
-              onClick={() => action.attack()}
-            >
-              <Swords size={19} />
-              <small>Attack</small>
-            </button>
-            <button
-              className="touch-ability"
-              aria-label="Open companion abilities"
-              onClick={() => {
-                if (!action.save.active) {
-                  action.open('creatures');
-                  return;
+        <div
+          className="touch-actions"
+          role="group"
+          aria-label={build ? 'Building actions' : 'Adventure actions'}
+        >
+          {build ? (
+            <>
+              <button
+                aria-label="Place blocks"
+                aria-pressed={!removing}
+                onClick={() => {
+                  touchInput.remove = false;
+                  setRemoving(false);
+                }}
+              >
+                <Hammer size={22} />
+                <small>Place</small>
+              </button>
+              <button
+                aria-label="Remove blocks"
+                aria-pressed={removing}
+                onClick={() => {
+                  touchInput.remove = true;
+                  setRemoving(true);
+                }}
+              >
+                <Hand size={22} />
+                <small>Remove</small>
+              </button>
+              <button
+                aria-label="Exit building mode"
+                onClick={() => {
+                  useGame.setState({ build: false });
+                  touchInput.remove = false;
+                  setRemoving(false);
+                }}
+              >
+                <LogOut size={22} />
+                <small>Exit</small>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="touch-build"
+                aria-label="Enter building mode"
+                onClick={() => {
+                  if (action.save.quests.q02?.status !== 'complete') {
+                    action.notify('Help Bruno first to unlock building.');
+                    return;
+                  }
+                  navigation.destination = null;
+                  useGame.setState({ build: true, abilityTrayOpen: false });
+                }}
+              >
+                <Hammer size={21} />
+                <small>Build</small>
+              </button>
+              <button
+                className="touch-attack"
+                aria-label="Basic attack"
+                onClick={() => action.attack()}
+              >
+                <Swords size={19} />
+                <small>Attack</small>
+              </button>
+              <button
+                className="touch-ability"
+                aria-label="Open companion abilities"
+                onClick={() => {
+                  if (!action.save.active) {
+                    action.open('creatures');
+                    return;
+                  }
+                  useGame.setState({ abilityTrayOpen: true });
+                }}
+              >
+                <Sparkles size={19} />
+                <small>Ability</small>
+              </button>
+              <button
+                className="touch-interact"
+                data-available={!!target}
+                disabled={(!!visitor && visitor === target) || huntAction === 'Wait'}
+                aria-label={
+                  target?.startsWith('gate:')
+                    ? gateOpen
+                      ? 'Close wooden gate'
+                      : 'Open wooden gate'
+                    : 'Interact or gather'
                 }
-                useGame.setState({ abilityTrayOpen: true });
-              }}
-            >
-              <Sparkles size={19} />
-              <small>Ability</small>
-            </button>
-            <button
-              className="touch-interact"
-              data-available={!!target}
-              disabled={(!!visitor && visitor === target) || huntAction === 'Wait'}
-              aria-label={
-                target?.startsWith('gate:')
-                  ? gateOpen
-                    ? 'Close wooden gate'
-                    : 'Open wooden gate'
-                  : 'Interact or gather'
-              }
-              onClick={() => {
-                navigation.destination = null;
-                action.interact();
-              }}
-            >
-              <Hand size={23} />
-              <small>
-                {visitor && visitor === target
-                  ? 'Coming…'
-                  : atHome
-                    ? 'Knock'
-                    : target?.startsWith('gate:')
-                      ? gateOpen
-                        ? 'Close'
-                        : 'Open'
-                      : huntAction
-                        ? huntAction
-                        : NPCS.some((n) => n.id === target)
-                          ? 'Talk'
-                          : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
-                            ? 'Gather'
-                            : 'Use'}
-              </small>
-            </button>
-            <button
-              className="touch-jump"
-              aria-label="Jump"
-              onPointerDown={(e) => {
-                e.currentTarget.setPointerCapture(e.pointerId);
-                touchInput.jump = true;
-              }}
-              onPointerUp={() => (touchInput.jump = false)}
-              onPointerCancel={() => (touchInput.jump = false)}
-              onLostPointerCapture={() => (touchInput.jump = false)}
-            >
-              <ArrowUp size={24} />
-              <small>Jump</small>
-            </button>
-          </>
-        )}
+                onClick={() => {
+                  navigation.destination = null;
+                  action.interact();
+                }}
+              >
+                <Hand size={23} />
+                <small>
+                  {visitor && visitor === target
+                    ? 'Coming…'
+                    : atHome
+                      ? 'Knock'
+                      : target?.startsWith('gate:')
+                        ? gateOpen
+                          ? 'Close'
+                          : 'Open'
+                        : huntAction
+                          ? huntAction
+                          : NPCS.some((n) => n.id === target)
+                            ? 'Talk'
+                            : OBJECTS.find((o) => o.id === target)?.kind === 'resource' || !target
+                              ? 'Gather'
+                              : 'Use'}
+                </small>
+              </button>
+              <button
+                className="touch-jump"
+                aria-label="Jump"
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  touchInput.jump = true;
+                }}
+                onPointerUp={() => (touchInput.jump = false)}
+                onPointerCancel={() => (touchInput.jump = false)}
+                onLostPointerCapture={() => (touchInput.jump = false)}
+              >
+                <ArrowUp size={24} />
+                <small>Jump</small>
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <span className="touch-camera-hint">
         {build

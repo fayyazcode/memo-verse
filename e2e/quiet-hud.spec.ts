@@ -80,6 +80,7 @@ test('quiet mobile play has one mission arrow, uncluttered names and an unobstru
     const selectors = [
       '.hotbar',
       '.virtual-joystick',
+      '.touch-build',
       '.touch-attack',
       '.touch-ability',
       '.touch-interact',
@@ -107,7 +108,7 @@ test('quiet mobile play has one mission arrow, uncluttered names and an unobstru
       }
     expect(
       await page.locator('.touch-attack').evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
-    ).toBe('65%');
+    ).toBe('50%');
     await page.screenshot({ path: `/tmp/momo-quiet-${w}x${h}.png` });
   }
   await page.setViewportSize({ width: 390, height: 844 });

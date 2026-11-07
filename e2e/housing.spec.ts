@@ -101,7 +101,7 @@ test('mission 9 can craft, preview and build a roofed home, open its gate, enter
   await page.screenshot({ path: '/tmp/momo-house-preview.png' });
   await build.tap();
   await expect(page.getByRole('region', { name: 'House building tools' })).toContainText(
-    '0 wooden blocks'
+    '0 blocks'
   );
   await page.getByRole('button', { name: 'Exit building mode' }).tap();
   await expect(page.getByRole('button', { name: 'Open tracked mission' })).toContainText('REWARD');

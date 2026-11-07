@@ -657,3 +657,153 @@ iframe[title='Netlify Badge'] {
 .meadow-guide article small {
   color: #536e46;
 }
+
+/* Compact circular action cluster; construction replaces combat in the same dock. */
+.building-tools-touch {
+  display: none;
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .building-tools-desktop {
+    display: none;
+  }
+  .touch-action-dock {
+    --action-size: clamp(50px, 14.4vw, 60px);
+    position: absolute;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    right: max(12px, env(safe-area-inset-right));
+    pointer-events: auto;
+  }
+  .touch-action-dock .touch-actions {
+    --action-size: inherit;
+    position: relative;
+    inset: auto;
+    display: block;
+    width: calc(var(--action-size) * 3 + 10px);
+    height: calc(var(--action-size) * 3 + 10px);
+    filter: none;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff8df22 0, #254c3322 58%, transparent 71%);
+  }
+  .touch-action-dock .touch-actions button {
+    position: absolute;
+    width: var(--action-size);
+    height: var(--action-size);
+    min-height: 48px;
+    border-radius: 50%;
+    border-width: 1.5px;
+    gap: 2px;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    box-shadow:
+      inset 0 2px 5px #ffffff25,
+      0 3px 7px #1e392333;
+  }
+  .touch-action-dock .touch-actions svg {
+    width: 21px;
+    height: 21px;
+  }
+  .touch-action-dock .touch-actions small {
+    font-size: 12px;
+    line-height: 1.1;
+  }
+  .touch-action-dock .touch-actions .touch-build {
+    left: calc(var(--action-size) + 5px);
+    top: 0;
+    background: radial-gradient(circle at 30% 20%, #b49362, #76603b);
+  }
+  .touch-actions .touch-attack {
+    left: 0;
+    top: calc(var(--action-size) * 0.85);
+  }
+  .touch-actions .touch-ability {
+    right: 0;
+    top: calc(var(--action-size) * 0.85);
+  }
+  .touch-actions .touch-interact {
+    left: calc(var(--action-size) * 0.45);
+    bottom: 0;
+  }
+  .touch-actions .touch-jump {
+    right: calc(var(--action-size) * 0.45);
+    bottom: 0;
+  }
+  .touch-action-dock[data-building='true'] {
+    width: min(236px, calc(100vw - 116px));
+  }
+  .touch-controls[data-building='true'] .virtual-joystick {
+    width: 88px;
+    height: 88px;
+  }
+  .touch-action-dock[data-building='true'] .touch-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(var(--action-size) * 3 + 10px);
+    margin-left: auto;
+    height: var(--action-size);
+    background: none;
+  }
+  .touch-action-dock[data-building='true'] .touch-actions button {
+    position: static;
+    border-radius: 50%;
+    background: #315c42;
+  }
+  .touch-action-dock[data-building='true'] .touch-actions button[aria-pressed='true'] {
+    background: #f9f1d8;
+    color: #294b36;
+    box-shadow:
+      0 0 0 2px #8caf62,
+      0 3px 8px #203e302b;
+  }
+  .touch-action-dock[data-building='true'] .touch-actions button:last-child {
+    background: #6c4a40;
+  }
+  .touch-action-dock .building-tools-touch {
+    display: block;
+    position: relative;
+    inset: auto;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 20px;
+  }
+  .building-tools-touch .building-part-options button {
+    min-width: 0;
+    min-height: 46px;
+    font-size: 11px;
+    line-height: 1.1;
+    gap: 3px;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+  }
+  .building-tools-touch .building-materials {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 12px;
+    padding-top: 5px;
+  }
+  .building-tools-touch .building-materials button,
+  .building-tools-touch .building-materials select {
+    min-height: 44px;
+  }
+  .building-tools-touch > small {
+    display: none;
+  }
+  .building-tools-touch .build-starter {
+    margin: 5px 0 0;
+    font-size: 12px;
+  }
+}
+@media (max-width: 900px) and (orientation: landscape) {
+  .touch-action-dock {
+    --action-size: 48px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+  .touch-action-dock[data-building='true'] {
+    width: 236px;
+  }
+}
